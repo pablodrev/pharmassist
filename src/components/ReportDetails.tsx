@@ -11,7 +11,7 @@ import {
 } from "./ui/select";
 import { X, Check, AlertCircle, Edit } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 interface ReportDetailsProps {
   report: Report;

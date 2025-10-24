@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form@7.55.0";
+import { useForm } from "react-hook-form";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -16,15 +16,18 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "./ui/popover";
+import { ru } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 import { FormData } from "../App";
+import { on } from "events";
 
 interface PatientInfoFormProps {
   data: FormData;
   onNext: (data: Partial<FormData>) => void;
+  onSkipToFiles?: () => void;
 }
 
-export function PatientInfoForm({ data, onNext }: PatientInfoFormProps) {
+export function PatientInfoForm({ data, onNext, onSkipToFiles }: PatientInfoFormProps) {
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
     defaultValues: {
       patientName: data.patientName,
@@ -47,7 +50,7 @@ export function PatientInfoForm({ data, onNext }: PatientInfoFormProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div>
-        <h2 className="mb-6">Информация о пациенте</h2>
+        <h2 className="mb-6 font-medium">Информация о пациенте</h2>
 
         <div className="space-y-4">
           <div>
@@ -117,6 +120,7 @@ export function PatientInfoForm({ data, onNext }: PatientInfoFormProps) {
                     selected={patientBirthDate}
                     onSelect={(date) => setValue("patientBirthDate", date)}
                     initialFocus
+                    locale={ru}
                   />
                 </PopoverContent>
               </Popover>
@@ -162,6 +166,14 @@ export function PatientInfoForm({ data, onNext }: PatientInfoFormProps) {
       </div>
 
       <div className="flex justify-end">
+        <Button 
+        type="button" 
+        className="mx-2"
+        variant="outline"
+        onClick={onSkipToFiles}
+        >
+          Добавить файл
+        </Button>
         <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700">
           Далее
         </Button>

@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form@7.55.0";
+import { useForm } from "react-hook-form";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -29,7 +29,7 @@ export function DoctorInfoForm({ data, onNext, onBack }: DoctorInfoFormProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div>
-        <h2 className="mb-6">Информация о враче</h2>
+        <h2 className="mb-6 font-medium">Информация о враче</h2>
 
         <div className="space-y-4">
           <div>

@@ -7,8 +7,9 @@ import { FilesAndAdditionalInfoForm } from "./components/FilesAndAdditionalInfoF
 import { FormProgress } from "./components/FormProgress";
 import { ReportsListPage } from "./components/ReportsListPage";
 import { Button } from "./components/ui/button";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
+import { set } from "react-hook-form";
 
 export interface FormData {
   // Patient Information
@@ -69,12 +70,13 @@ const steps = [
   { id: 2, title: "Информация о враче" },
   { id: 3, title: "Информация о препарате" },
   { id: 4, title: "Информация о побочном эффекте" },
-  { id: 5, title: "Файлы и дополнительно" },
+  { id: 5, title: "Файлы" },
 ];
 
 export default function App() {
   const [view, setView] = useState<"list" | "form">("list");
   const [currentStep, setCurrentStep] = useState(1);
+  const [ skippedSteps, setSkippedSteps ] = useState<Set<number>>(new Set());
   const [formData, setFormData] = useState<FormData>({
     patientName: "",
     patientGender: "",
@@ -126,8 +128,17 @@ export default function App() {
   };
 
   const handleBack = () => {
-    setCurrentStep(currentStep - 1);
+    if (currentStep === steps.length && skippedSteps.size > 0) {
+      setCurrentStep(1);
+      setSkippedSteps(new Set());
+    } else {
+      setCurrentStep((prev) => Math.max(1, prev - 1));
+    }
   };
+
+  const handleSkipToFiles = () => {
+  setCurrentStep(5);
+};
 
   const handleSubmit = (data: Partial<FormData>) => {
     const finalData = { ...formData, ...data };
@@ -199,8 +210,22 @@ export default function App() {
     return <ReportsListPage onNewReport={handleNewReport} />;
   }
 
+  const skipToLast = () => {
+    const newSkipped = new Set<number>();
+    for (let i = currentStep; i < steps.length; i++) {
+      newSkipped.add(i);
+    }
+    setSkippedSteps(new Set([...skippedSteps, ...newSkipped]));
+    setCurrentStep(steps.length);
+  }
+
+  const goBackStep = () => {
+    setCurrentStep(1);
+    setSkippedSteps(new Set());
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 bg-gradient_main">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="mb-6">
           <Button
@@ -212,7 +237,7 @@ export default function App() {
             Вернуться к списку
           </Button>
         </div>
-        <div className="mb-8 text-center">
+        <div className="mb-6 text-center">
           <h1 className="mb-4">Сообщить о побочном эффекте</h1>
           <p className="text-gray-600 max-w-3xl mx-auto">
             Уважаемые врачи! Пожалуйста, заполните форму ниже и прикрепите файлы
@@ -222,13 +247,18 @@ export default function App() {
           </p>
         </div>
 
-        <FormProgress steps={steps} currentStep={currentStep} />
+        <FormProgress 
+        steps={steps}
+        currentStep={currentStep}
+        skippedSteps={skippedSteps}
+        />
 
         <div className="bg-white rounded-lg shadow-lg p-8 mt-8">
           {currentStep === 1 && (
             <PatientInfoForm
               data={formData}
               onNext={handleNext}
+              onSkipToFiles={skipToLast}
             />
           )}
 
@@ -261,6 +291,7 @@ export default function App() {
               data={formData}
               onSubmit={handleSubmit}
               onBack={handleBack}
+              onGoBackToFirst={goBackStep}
             />
           )}
         </div>

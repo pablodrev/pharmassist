@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form@7.55.0";
+import { useForm } from "react-hook-form";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -6,12 +6,13 @@ import { Textarea } from "./ui/textarea";
 import { FormData } from "../App";
 import { useState } from "react";
 import { Upload, X, FileIcon } from "lucide-react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 interface FilesAndAdditionalInfoFormProps {
   data: FormData;
   onSubmit: (data: Partial<FormData>) => void;
   onBack: () => void;
+  onGoBackToFirst: () => void;
 }
 
 export function FilesAndAdditionalInfoForm({
@@ -85,7 +86,7 @@ export function FilesAndAdditionalInfoForm({
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
       <div>
-        <h2 className="mb-6">Загрузка файлов и дополнительная информация</h2>
+        <h2 className="mb-6 font-medium">Загрузка файлов и дополнительная информация</h2>
 
         <div className="space-y-6">
           <div>
