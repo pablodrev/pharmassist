@@ -105,9 +105,9 @@ export function ReportCard({ report, onClick }: ReportCardProps) {
           {report.severity && (
             <Badge className={getSeverityColor(report.severity)} variant="outline">
               {report.severity === "mild"
-                ? "Легкая"
+                ? "Удовлетворительное"
                 : report.severity === "moderate"
-                  ? "Средняя"
+                  ? "Средняя степень"
                   : report.severity === "severe"
                     ? "Тяжелая"
                     : "Жизнеугрожающая"}
