@@ -27,6 +27,8 @@ export const mockReports: Report[] = [
     },
     causalityAssessment: "probable",
     severity: "moderate",
+    clinicalSignificance: "familiar",
+    definitionForesight: "notForeseen",
     fullData: {},
   },
   {

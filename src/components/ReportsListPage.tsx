@@ -30,13 +30,23 @@ export function ReportsListPage({ onNewReport }: ReportsListPageProps) {
   const [activeTab, setActiveTab] = useState<Report["status"]>("incoming");
 
   const handleStatusChange = (reportId: string, newStatus: Report["status"]) => {
-    setReports((prevReports) =>
+    setReports((prevReports: Report[]) =>
       prevReports.map((report) =>
         report.id === reportId ? { ...report, status: newStatus } : report
       )
     );
-    setSelectedReport(null);
+
+    setSelectedReport((prev: Report | null) =>
+      prev && prev.id === reportId ? { ...prev, status: newStatus } : prev
+    );
   };
+
+  const handleConfirm = (reportId: string) => {
+    setReports((prev) =>
+      prev.map((r) => (r.id === reportId ? { ...r, confirmed: true } : r))
+    );
+  };
+
 
   // Get unique medications for filter
   const uniqueMedications = useMemo(() => {
@@ -98,9 +108,12 @@ export function ReportsListPage({ onNewReport }: ReportsListPageProps) {
         <div className="max-w-7xl mx-auto px-4 py-6 ">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1>Управление сообщениями о побочных эффектах</h1>
-              <p className="text-gray-600 mt-1">
-                Просмотр и анализ сообщений, обработанных ИИ-ассистентом
+              <div className="flex items-center justify-center">
+                <img src="src\assets\Frame 4.png" alt="logo" className="h-full w-24" />
+                <h1>Управление сообщениями о побочных эффектах</h1>
+              </div>
+              <p className="text-gray-600 mt-1 mx-2">
+                {/* Просмотр и анализ сообщений, обработанных ИИ-ассистентом */}
               </p>
             </div>
             <Button onClick={onNewReport} className="bg-indigo-600 hover:bg-indigo-700">
@@ -200,6 +213,7 @@ export function ReportsListPage({ onNewReport }: ReportsListPageProps) {
           report={selectedReport}
           onClose={() => setSelectedReport(null)}
           onStatusChange={handleStatusChange}
+          onConfirm={handleConfirm}
         />
       )}
     </div>

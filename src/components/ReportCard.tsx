@@ -1,7 +1,7 @@
 import { Report } from "../types/report";
 import { Badge } from "./ui/badge";
-import { Card } from "./ui/card";
-import { AlertCircle, CheckCircle, Clock } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
+import { AlertCircle, CheckCircle, Clock, Check } from "lucide-react";
 
 interface ReportCardProps {
   report: Report;
@@ -36,6 +36,29 @@ export function ReportCard({ report, onClick }: ReportCardProps) {
     }
   };
 
+  const getClinicalSignificanceColor = (level?: string) => {
+    switch (level) {
+      case "familiar":
+        return "bg-red-100 text-red-800";
+      case "iunfamiliar":
+        return "bg-orange-100 text-orange-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const GetColorForesight = (probability?: string) => {
+    switch (probability) {
+      case "foreseen":
+        return "bg-green-100 text-green-800";
+      case "notForeseen":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+
   const completenessPercentage = () => {
     const values = Object.values(report.completeness);
     const completed = values.filter(Boolean).length;
@@ -52,8 +75,8 @@ export function ReportCard({ report, onClick }: ReportCardProps) {
           report.status === "incoming"
             ? "#3b82f6"
             : report.status === "clarification"
-            ? "#f59e0b"
-            : "#10b981",
+              ? "#f59e0b"
+              : "#10b981",
       }}
       onClick={onClick}
     >
@@ -61,8 +84,10 @@ export function ReportCard({ report, onClick }: ReportCardProps) {
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold">{report.patientName}</h3>
-              <span className="text-sm text-gray-500">#{report.id}</span>
+              <h3 className="font-semibold flex items-center gap-2">
+                {report.patientName}
+              </h3>
+              <span className="flex items-center gap-2 text-sm text-gray-500">#{report.id}{report.confirmed && <Check className="w-5 h-5 text-green-600" />}</span>
             </div>
             <p className="text-sm text-gray-600">
               Препарат: <span className="font-medium">{report.medicationName}</span>
@@ -82,10 +107,10 @@ export function ReportCard({ report, onClick }: ReportCardProps) {
               {report.severity === "mild"
                 ? "Легкая"
                 : report.severity === "moderate"
-                ? "Средняя"
-                : report.severity === "severe"
-                ? "Тяжелая"
-                : "Жизнеугрожающая"}
+                  ? "Средняя"
+                  : report.severity === "severe"
+                    ? "Тяжелая"
+                    : "Жизнеугрожающая"}
             </Badge>
           )}
           {report.causalityAssessment && (
@@ -96,24 +121,46 @@ export function ReportCard({ report, onClick }: ReportCardProps) {
               {report.causalityAssessment === "certain"
                 ? "Определенная связь"
                 : report.causalityAssessment === "probable"
-                ? "Вероятная связь"
-                : "Возможная связь"}
+                  ? "Вероятная связь"
+                  : "Возможная связь"}
+            </Badge>
+          )}
+          {report.clinicalSignificance && (
+            <Badge
+              className={getClinicalSignificanceColor(report.clinicalSignificance)}
+              variant="outline"
+            >
+              {report.clinicalSignificance === "familiar"
+                ? "Значимо"
+                : "Незначимое"}
+            </Badge>
+          )}
+          {report.definitionForesight && (
+            <Badge
+              className={GetColorForesight(report.definitionForesight)}
+              variant="outline"
+            >
+              {report.definitionForesight === "foreseen"
+                ? "Предвиденное"
+                : "Непредвиденное"}
             </Badge>
           )}
         </div>
 
         {/* AI Notes */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-1">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertCircle className="w-4 h-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-900">Пометки от ИИ-ассистента:</span>
+        {report.status !== "analysis" && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-1">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertCircle className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-900">Пометки от ИИ-ассистента:</span>
+            </div>
+            {report.aiNotes.map((note, index) => (
+              <p key={index} className="text-sm text-blue-800 pl-6">
+                • {note}
+              </p>
+            ))}
           </div>
-          {report.aiNotes.map((note, index) => (
-            <p key={index} className="text-sm text-blue-800 pl-6">
-              • {note}
-            </p>
-          ))}
-        </div>
+        )}
 
         {/* Completeness indicator */}
         <div className="space-y-2">
@@ -130,8 +177,8 @@ export function ReportCard({ report, onClick }: ReportCardProps) {
                   percentage >= 80
                     ? "#10b981"
                     : percentage >= 50
-                    ? "#f59e0b"
-                    : "#ef4444",
+                      ? "#f59e0b"
+                      : "#ef4444",
               }}
             />
           </div>

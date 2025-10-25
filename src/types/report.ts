@@ -20,5 +20,8 @@ export interface Report {
   };
   causalityAssessment?: string;
   severity?: string;
+  clinicalSignificance?: string;
+  definitionForesight?: string;
   fullData: any;
+  confirmed?: boolean;
 }

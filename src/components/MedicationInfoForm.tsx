@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Calendar } from "./ui/calendar";
+import { ru } from "date-fns/locale";
 import {
   Popover,
   PopoverContent,
@@ -207,6 +208,7 @@ export function MedicationInfoForm({ data, onNext, onBack }: MedicationInfoFormP
                     selected={startDate}
                     onSelect={(date) => setValue("startDate", date)}
                     initialFocus
+                    locale={ru}
                   />
                 </PopoverContent>
               </Popover>
@@ -234,6 +236,7 @@ export function MedicationInfoForm({ data, onNext, onBack }: MedicationInfoFormP
                     selected={endDate}
                     onSelect={(date) => setValue("endDate", date)}
                     initialFocus
+                    locale={ru}
                   />
                 </PopoverContent>
               </Popover>

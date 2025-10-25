@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Calendar } from "./ui/calendar";
+import { ru } from "date-fns/locale";
 import {
   Popover,
   PopoverContent,
@@ -105,6 +106,7 @@ export function AdverseEffectInfoForm({ data, onNext, onBack }: AdverseEffectInf
                     selected={effectDate}
                     onSelect={(date) => setValue("effectDate", date)}
                     initialFocus
+                    locale={ru}
                   />
                 </PopoverContent>
               </Popover>
