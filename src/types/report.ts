@@ -24,4 +24,5 @@ export interface Report {
   definitionForesight?: string;
   fullData: any;
   confirmed?: boolean;
+  description?: string;
 }

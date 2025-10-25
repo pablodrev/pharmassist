@@ -126,7 +126,7 @@ export function AdverseEffectInfoForm({ data, onNext, onBack }: AdverseEffectInf
             <Label htmlFor="effectDescription">Подробное описание побочного эффекта *</Label>
             <Textarea
               id="effectDescription"
-              {...register("effectDescription", { required: "Обязательное поле" })}
+              // {...register("effectDescription", { required: "Обязательное поле" })}
               placeholder="Пожалуйста, укажите все симптомы, их интенсивность и продолжительность"
               rows={5}
             />

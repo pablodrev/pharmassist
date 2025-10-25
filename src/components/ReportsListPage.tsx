@@ -110,13 +110,13 @@ export function ReportsListPage({ onNewReport }: ReportsListPageProps) {
             <div>
               <div className="flex items-center justify-center">
                 <img src="src\assets\Frame 4.png" alt="logo" className="h-full w-24" />
-                <h1>Управление сообщениями о побочных эффектах</h1>
+                <h1>ФармАссист</h1>
               </div>
               <p className="text-gray-600 mt-1 mx-2">
                 {/* Просмотр и анализ сообщений, обработанных ИИ-ассистентом */}
               </p>
             </div>
-            <Button onClick={onNewReport} className="bg-indigo-600 hover:bg-indigo-700">
+            <Button onClick={onNewReport} className="bg-blue-600 hover:bg-blue-200">
               <Plus className="w-4 h-4 mr-2" />
               Новое сообщение
             </Button>

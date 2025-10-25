@@ -50,7 +50,7 @@ export function ReportCard({ report, onClick }: ReportCardProps) {
   const GetColorForesight = (probability?: string) => {
     switch (probability) {
       case "foreseen":
-        return "bg-green-100 text-green-800";
+        return "bg-yellow-100 text-green-800";
       case "notForeseen":
         return "bg-red-100 text-red-800";
       default:

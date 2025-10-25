@@ -57,7 +57,7 @@ export function PatientInfoForm({ data, onNext, onSkipToFiles }: PatientInfoForm
             <Label htmlFor="patientName">ФИО пациента *</Label>
             <Input
               id="patientName"
-              {...register("patientName", { required: "Обязательное поле" })}
+              // {...register("patientName", { required: "Обязательное поле" })}
               placeholder="Иванов Иван Иванович"
             />
             {errors.patientName && (
@@ -90,7 +90,7 @@ export function PatientInfoForm({ data, onNext, onSkipToFiles }: PatientInfoForm
               <Input
                 id="patientAge"
                 type="number"
-                {...register("patientAge", { required: "Обязательное поле" })}
+                // {...register("patientAge", { required: "Обязательное поле" })}
                 placeholder="35"
               />
               {errors.patientAge && (
@@ -133,7 +133,7 @@ export function PatientInfoForm({ data, onNext, onSkipToFiles }: PatientInfoForm
               id="patientWeight"
               type="number"
               step="0.1"
-              {...register("patientWeight", { required: "Обязательное поле" })}
+              // {...register("patientWeight", { required: "Обязательное поле" })}
               placeholder="70"
             />
             {errors.patientWeight && (
@@ -145,7 +145,7 @@ export function PatientInfoForm({ data, onNext, onSkipToFiles }: PatientInfoForm
             <Label htmlFor="primaryDiagnosis">Основной диагноз *</Label>
             <Input
               id="primaryDiagnosis"
-              {...register("primaryDiagnosis", { required: "Обязательное поле" })}
+              // {...register("primaryDiagnosis", { required: "Обязательное поле" })}
               placeholder="Заболевание, по поводу которого назначено лекарство"
             />
             {errors.primaryDiagnosis && (

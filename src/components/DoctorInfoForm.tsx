@@ -36,7 +36,7 @@ export function DoctorInfoForm({ data, onNext, onBack }: DoctorInfoFormProps) {
             <Label htmlFor="doctorName">ФИО врача *</Label>
             <Input
               id="doctorName"
-              {...register("doctorName", { required: "Обязательное поле" })}
+              // {...register("doctorName", { required: "Обязательное поле" })}
               placeholder="Петров Петр Петрович"
             />
             {errors.doctorName && (
@@ -48,7 +48,7 @@ export function DoctorInfoForm({ data, onNext, onBack }: DoctorInfoFormProps) {
             <Label htmlFor="doctorPosition">Должность *</Label>
             <Input
               id="doctorPosition"
-              {...register("doctorPosition", { required: "Обязательное поле" })}
+              // {...register("doctorPosition", { required: "Обязательное поле" })}
               placeholder="Врач-терапевт"
             />
             {errors.doctorPosition && (
@@ -60,7 +60,7 @@ export function DoctorInfoForm({ data, onNext, onBack }: DoctorInfoFormProps) {
             <Label htmlFor="doctorSpecialty">Специальность *</Label>
             <Input
               id="doctorSpecialty"
-              {...register("doctorSpecialty", { required: "Обязательное поле" })}
+              // {...register("doctorSpecialty", { required: "Обязательное поле" })}
               placeholder="Терапия"
             />
             {errors.doctorSpecialty && (
@@ -72,7 +72,7 @@ export function DoctorInfoForm({ data, onNext, onBack }: DoctorInfoFormProps) {
             <Label htmlFor="medicalInstitution">Название медицинского учреждения *</Label>
             <Input
               id="medicalInstitution"
-              {...register("medicalInstitution", { required: "Обязательное поле" })}
+              // {...register("medicalInstitution", { required: "Обязательное поле" })}
               placeholder="ГБУЗ Городская поликлиника №1"
             />
             {errors.medicalInstitution && (
@@ -85,7 +85,7 @@ export function DoctorInfoForm({ data, onNext, onBack }: DoctorInfoFormProps) {
             <Input
               id="doctorPhone"
               type="tel"
-              {...register("doctorPhone", { required: "Обязательное поле" })}
+              // {...register("doctorPhone", { required: "Обязательное поле" })}
               placeholder="+7 (999) 123-45-67"
             />
             {errors.doctorPhone && (
@@ -98,13 +98,13 @@ export function DoctorInfoForm({ data, onNext, onBack }: DoctorInfoFormProps) {
             <Input
               id="doctorEmail"
               type="email"
-              {...register("doctorEmail", {
-                required: "Обязательное поле",
-                pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: "Неверный формат email",
-                },
-              })}
+              // {...register("doctorEmail", {
+              //   required: "Обязательное поле",
+              //   pattern: {
+              //     value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+              //     message: "Неверный формат email",
+              //   },
+              // })}
               placeholder="doctor@example.com"
             />
             {errors.doctorEmail && (
