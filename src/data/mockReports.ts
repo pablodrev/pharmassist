@@ -12,7 +12,6 @@ export const mockReports: Report[] = [
     aiNotes: [
       "Не хватает: Дата окончания приема препарата",
       "Не хватает: Номер серии препарата",
-      "Предполагаемая связь с препаратом: Вероятная (по шкале ВОЗ)",
     ],
     completeness: {
       patientInfo: true,
@@ -23,7 +22,7 @@ export const mockReports: Report[] = [
       effectDate: true,
       effectDescription: true,
       severity: true,
-      outcome: false,
+      outcome: true,
     },
     causalityAssessment: "probable",
     severity: "moderate",
@@ -43,7 +42,6 @@ export const mockReports: Report[] = [
       "Не хватает: Информация об исходе побочного эффекта",
       "Не хватает: Дата окончания приема",
       "Требуется уточнение: Кратность приема препарата",
-      "Предполагаемая связь с препаратом: Возможная",
     ],
     completeness: {
       patientInfo: true,
@@ -58,6 +56,8 @@ export const mockReports: Report[] = [
     },
     causalityAssessment: "possible",
     severity: "mild",
+    clinicalSignificance: "familiar",
+    definitionForesight: "notForeseen",
     fullData: {},
   },
   {
@@ -70,7 +70,6 @@ export const mockReports: Report[] = [
     dateReceived: new Date("2025-10-15"),
     aiNotes: [
       "Все необходимые данные собраны",
-      "Предполагаемая связь с препаратом: Определенная (по шкале Наранжо - 9 баллов)",
       "Рекомендация: Известный побочный эффект НПВП, рассмотреть назначение гастропротекторов",
     ],
     completeness: {
@@ -86,6 +85,8 @@ export const mockReports: Report[] = [
     },
     causalityAssessment: "certain",
     severity: "moderate",
+    clinicalSignificance: "familiar",
+    definitionForesight: "notForeseen",
     fullData: {},
   },
   {
@@ -100,7 +101,6 @@ export const mockReports: Report[] = [
       "Не хватает: Номер серии препарата",
       "Не хватает: Производитель препарата",
       "Не хватает: Информация о сопутствующих заболеваниях",
-      "Предполагаемая связь с препаратом: Возможная",
     ],
     completeness: {
       patientInfo: true,
@@ -115,6 +115,8 @@ export const mockReports: Report[] = [
     },
     causalityAssessment: "possible",
     severity: "mild",
+    clinicalSignificance: "familiar",
+    definitionForesight: "foreseen",
     fullData: {},
   },
   {
@@ -128,7 +130,6 @@ export const mockReports: Report[] = [
     aiNotes: [
       "Требуется уточнение: Дозировка препарата",
       "Не хватает: Дата наступления исхода",
-      "Предполагаемая связь с препаратом: Вероятная",
     ],
     completeness: {
       patientInfo: true,
@@ -143,6 +144,8 @@ export const mockReports: Report[] = [
     },
     causalityAssessment: "probable",
     severity: "mild",
+    clinicalSignificance: "familiar",
+    definitionForesight: "notForeseen",
     fullData: {},
   },
   {
@@ -171,6 +174,8 @@ export const mockReports: Report[] = [
     },
     causalityAssessment: "certain",
     severity: "mild",
+    clinicalSignificance: "iunfamiliar",
+    definitionForesight: "foreseen",
     fullData: {},
   },
 ];
