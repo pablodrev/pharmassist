@@ -48,6 +48,7 @@ services:
       - ./auth.py:/app/auth.py
       - ./db.py:/app/db.py
       - ./api_schemas.py:/app/api_schemas.py
+      - hf_cache:/root/.cache/huggingface
     command: sh -c "sleep 2 && uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload"
 
   # frontend:
@@ -64,6 +65,7 @@ services:
 
 volumes:
   postgres_data:
+  hf_cache:
 networks:
   pharma-network:
     driver: bridge

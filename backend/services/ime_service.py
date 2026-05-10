@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 # EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 # EMBEDDING_MODEL = "pritamdeka/S-PubMedBert-MS-MARCO"
 EMBEDDING_MODEL = "intfloat/multilingual-e5-large"
-SIMILARITY_THRESHOLD = 0.50  # minimum cosine similarity to consider a match
+SIMILARITY_THRESHOLD = 0.70  # minimum cosine similarity to consider a match
 
 
 class _ReactionExtractionItem(BaseModel):
@@ -66,6 +66,14 @@ class IMEService:
             self._load_good_list(Path(__file__).parent.parent / "data" / "good_list.txt")
         except Exception as e:
             logger.warning("Failed to load safe reaction list: %s", e)
+
+        # Eagerly load the embedder so it's ready before the first request.
+        # Without this, model download happens mid-request and blocks the pipeline.
+        if self._ime_df is not None:
+            logger.info("[IME] Pre-loading embedder model: %s", EMBEDDING_MODEL)
+            t0 = time.perf_counter()
+            self._get_embedder()
+            logger.info("[IME] Embedder ready in %.1fs", time.perf_counter() - t0)
 
     def _get_embedder(self):
         if self._embedder is None:
