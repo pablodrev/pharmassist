@@ -6,6 +6,7 @@ against MedDRA preferred terms in the IME CSV.
 
 from __future__ import annotations
 import logging
+import time
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -192,10 +193,13 @@ class IMEService:
         """
         if self._ime_vectors is None or self._ime_df is None:
             return [], {}
-        
+
         embedder = self._get_embedder()
         search_text = reaction_item.reaction_en.strip() or reaction_item.reaction_ru
+        logger.info("[IME] Encoding query: %r  (model=%s)", search_text, EMBEDDING_MODEL)
+        t0 = time.perf_counter()
         qvec = embedder.encode([search_text], normalize_embeddings=True, show_progress_bar=False)
+        logger.info("[IME] Embedding done in %.1fs", time.perf_counter() - t0)
         scores = (self._ime_vectors @ qvec.T).flatten()
         best_indices = np.argsort(scores)[::-1][:3]
 
@@ -301,24 +305,38 @@ class IMEService:
         )
         
         try:
+            logger.info("[IME] Judge LLM call for: %r", reaction_item.reaction_en)
+            t0 = time.perf_counter()
             raw_response = self.llm.complete_text(judge_system, judge_user)
+            logger.info("[IME] Judge LLM done in %.1fs", time.perf_counter() - t0)
             decision = raw_response.strip().upper()
-            
+
             if "YES" in decision:
-                logger.info("Judge APPROVED matches for: %s", reaction_item.reaction_en)
+                logger.info("[IME] Judge APPROVED matches for: %s", reaction_item.reaction_en)
                 return matches
             else:
-                logger.info("Judge REJECTED matches for: %s (response: %s)", reaction_item.reaction_en, decision)
+                logger.info("[IME] Judge REJECTED matches for: %s (response: %s)", reaction_item.reaction_en, decision)
                 return []
         except Exception as e:
-            logger.warning("Judge evaluation failed for %s: %s. Accepting matches by default.", reaction_item.reaction_en, e)
+            logger.warning("[IME] Judge evaluation failed for %s: %s. Accepting matches by default.", reaction_item.reaction_en, e)
             return matches
 
     def assess(self, case_text: str) -> IMEAssessment:
+        t_start = time.perf_counter()
+        logger.info("[IME] Step 2 started. Model: %s", EMBEDDING_MODEL)
+
+        logger.info("[IME] Extracting reactions via LLM...")
+        t0 = time.perf_counter()
         reaction_items = self._extract_reactions(case_text)
+        logger.info("[IME] LLM extraction done in %.1fs — %d reaction(s): %s",
+                    time.perf_counter() - t0,
+                    len(reaction_items),
+                    [r.reaction_en for r in reaction_items])
+
         extracted_reactions = [item.reaction_ru for item in reaction_items]
 
         if not self.is_available:
+            logger.warning("[IME] IME list not loaded — skipping matching")
             return IMEAssessment(
                 is_clinically_significant=False,
                 matches=[],
@@ -329,24 +347,24 @@ class IMEService:
         all_matches: list[IMEMatch] = []
         not_in_ime: list[str] = []
 
-        for item in reaction_items:
+        for i, item in enumerate(reaction_items, 1):
+            logger.info("[IME] Processing reaction %d/%d: %r", i, len(reaction_items), item.reaction_en)
+            t0 = time.perf_counter()
             matches, debug_info = self._find_ime_matches(item)
-            
-            # Apply Judge to filter false positives
+            logger.info("[IME] Matching done in %.1fs — %d candidate(s) above threshold",
+                        time.perf_counter() - t0, len(matches))
+
             if matches:
                 judged_matches = self._judge_ime_candidates(item, case_text, matches, debug_info)
                 if judged_matches:
                     all_matches.extend(judged_matches)
                 else:
-                    # Judge rejected all matches
                     not_in_ime.append(item.reaction_ru)
             else:
                 not_in_ime.append(item.reaction_ru)
-        
-        logger.info("ALL Matches after Judge filtering: %d", len(all_matches))
-        print("ALL Matches: ")
-        for match in all_matches:
-            print(f"    {match.ime_pt_name}")
+
+        logger.info("[IME] Step 2 done in %.1fs total — %d IME match(es)",
+                    time.perf_counter() - t_start, len(all_matches))
         return IMEAssessment(
             is_clinically_significant=len(all_matches) > 0,
             matches=all_matches,

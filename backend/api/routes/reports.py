@@ -1,6 +1,7 @@
 """Report routes."""
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
+import asyncio
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, UploadFile, File, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, desc, func
 from datetime import datetime, timedelta
@@ -10,6 +11,7 @@ import tempfile
 import logging
 from typing import Optional
 
+from db import async_session as _async_session
 from db import get_session
 from models.schemas_db import User, Report, Drug, AIRecommendation
 from auth import get_current_user, require_specialist
@@ -24,7 +26,7 @@ from api_schemas import (
 from services.orchestrator import AnalysisOrchestrator
 from core.llm_client import LLMClient
 from core.rag_engine import RAGEngine
-from services.case_extraction import CaseExtractionService
+from models.schemas import CaseExtraction, PatientInfo, ReporterInfo, AdverseReactionInfo, DrugInfo
 import json
 import requests
 
@@ -106,264 +108,8 @@ def _get_orchestrator() -> AnalysisOrchestrator:
     return _orchestrator
 
 
-@router.post("", status_code=status.HTTP_202_ACCEPTED)
-async def create_report(
-    request: CreateReportRequest,
-    current_user: dict = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session)
-):
-    """Create report from raw text."""
-    user_id = UUID(current_user["user_id"])
-    
-    logger.info(f"📝 Creating new report for user {user_id}")
-    logger.debug(f"Report text length: {len(request.raw_text)} chars")
-    
-    # Create report
-    report = Report(
-        reporter_id=user_id,
-        raw_text=request.raw_text,
-        status="submitted"
-    )
-    session.add(report)
-    await session.commit()
-    await session.refresh(report)
-    
-    logger.info(f"✅ Report created with ID: {report.id}")
-    
-    # Run analysis in background (simplified - in production use Celery)
-    try:
-        logger.info(f"🔄 Starting analysis for report {report.id}...")
-        analysis = _get_orchestrator().analyze(request.raw_text)
-        logger.info(f"✅ Analysis completed successfully")
-        
-        # Convert to dict
-        extracted_dict = analysis.case_extraction.model_dump() if analysis.case_extraction else None
-        logger.info(f"📊 Case extraction: {bool(extracted_dict)}")
-        
-        # Try to match drug
-        if analysis.case_extraction and analysis.case_extraction.suspect_drug:
-            drug_name = analysis.case_extraction.suspect_drug.name
-            logger.info(f"💊 Found drug: {drug_name}")
-            stmt = select(Drug).where(Drug.name_ru == drug_name)
-            result = await session.execute(stmt)
-            drug = result.scalar_one_or_none()
-            if not drug:
-                # Create drug
-                logger.info(f"➕ Creating new drug entry: {drug_name}")
-                drug = Drug(name_ru=drug_name)
-                session.add(drug)
-                await session.commit()
-                await session.refresh(drug)
-            report.drug_id = drug.id
-        
-        # Save extracted data
-        report.extracted_data = extracted_dict
-        report.status = "submitted"
-        
-        # Save AI recommendations
-        if analysis.case_extraction:
-            logger.info(f"💾 Saving case_extraction recommendation")
-            rec = AIRecommendation(
-                report_id=report.id,
-                type="case_extraction",
-                ai_output=extracted_dict or {}
-            )
-            session.add(rec)
-        
-        if analysis.ime_assessment:
-            logger.info(f"💾 Saving ime recommendation")
-            rec = AIRecommendation(
-                report_id=report.id,
-                type="ime",
-                ai_output=analysis.ime_assessment.model_dump()
-            )
-            session.add(rec)
-        
-        if analysis.naranjo_assessment:
-            logger.info(f"💾 Saving naranjo recommendation")
-            rec = AIRecommendation(
-                report_id=report.id,
-                type="naranjo",
-                ai_output=analysis.naranjo_assessment.model_dump()
-            )
-            session.add(rec)
-        
-        if analysis.expectedness_assessment:
-            logger.info(f"💾 Saving expectedness recommendation")
-            rec = AIRecommendation(
-                report_id=report.id,
-                type="expectedness",
-                ai_output=analysis.expectedness_assessment.model_dump()
-            )
-            session.add(rec)
-        
-        # Completeness
-        completeness = {
-            "missing_mandatory_fields": analysis.missing_mandatory_fields,
-            "warnings": analysis.warnings
-        }
-        logger.info(f"💾 Saving completeness recommendation")
-        rec = AIRecommendation(
-            report_id=report.id,
-            type="completeness",
-            ai_output=completeness
-        )
-        session.add(rec)
-        
-        await session.commit()
-        logger.info(f"✅ All recommendations saved for report {report.id}")
-        
-    except Exception as e:
-        logger.error(f"❌ Error analyzing report {report.id}: {str(e)}", exc_info=True)
-        # Still save the report, mark as failed
-        rec = AIRecommendation(
-            report_id=report.id,
-            type="completeness",
-            ai_output={"error": str(e), "missing_mandatory_fields": [], "warnings": []}
-        )
-        session.add(rec)
-        await session.commit()
-    
-    return {"id": report.id, "status": report.status}
-
-
-@router.post("/from-form", status_code=status.HTTP_202_ACCEPTED)
-async def create_report_from_form(
-    request: CreateReportFromFormRequest,
-    current_user: dict = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session)
-):
-    """Create report from structured form."""
-    user_id = UUID(current_user["user_id"])
-    
-    # Build narrative
-    narrative = f"""
-Пациент: {request.patient.name or 'Не указан'}, возраст {request.patient.age or 'не указан'}
-Пол: {request.patient.sex or 'не указан'}
-Вес: {request.patient.weight or 'не указан'}
-Диагноз: {request.patient.diagnosis or 'не указан'}
-Сопутствующие заболевания: {request.patient.comorbidities or 'нет'}
-
-Врач: {request.doctor.name or 'Не указан'}
-Специальность: {request.doctor.specialty or 'не указана'}
-Организация: {request.doctor.organization or 'не указана'}
-Email: {request.doctor.email or 'не указан'}
-
-Препарат: {request.medication.trade_name or request.medication.inn or 'не указан'}
-МНН: {request.medication.inn or 'не указан'}
-Доза: {request.medication.dose or 'не указана'}
-Путь введения: {request.medication.route or 'не указан'}
-Начало: {request.medication.start_date or 'не указано'}
-Окончание: {request.medication.end_date or 'не указано'}
-Показание: {request.medication.indication or 'не указано'}
-Производитель: {request.medication.manufacturer or 'не указан'}
-
-Нежелательная реакция: {request.adverse_effect.description}
-Дата: {request.adverse_effect.date or 'не указана'}
-Тяжесть: {request.adverse_effect.severity or 'не указана'}
-Серьёзная: {request.adverse_effect.is_serious or 'не указано'}
-Исход: {request.adverse_effect.outcome or 'не указан'}
-Оценка причинности: {request.adverse_effect.causality_assessment or 'не указана'}
-
-Дополнительная информация: {request.additional_info.additional_info or 'нет'}
-    """
-    
-    # Create report with raw text
-    report = Report(
-        reporter_id=user_id,
-        raw_text=narrative,
-        status="submitted"
-    )
-    session.add(report)
-    await session.commit()
-    await session.refresh(report)
-    
-    # Run analysis
-    try:
-        analysis = _get_orchestrator().analyze(narrative)
-        extracted_dict = analysis.case_extraction.model_dump() if analysis.case_extraction else None
-        
-        # Match drug
-        if analysis.case_extraction and analysis.case_extraction.suspect_drug:
-            drug_name = analysis.case_extraction.suspect_drug.name
-            stmt = select(Drug).where(Drug.name_ru == drug_name)
-            result = await session.execute(stmt)
-            drug = result.scalar_one_or_none()
-            if not drug:
-                drug = Drug(name_ru=drug_name)
-                session.add(drug)
-                await session.commit()
-                await session.refresh(drug)
-            report.drug_id = drug.id
-        
-        report.extracted_data = extracted_dict
-        
-        # Save recommendations
-        if analysis.case_extraction:
-            rec = AIRecommendation(
-                report_id=report.id,
-                type="case_extraction",
-                ai_output=extracted_dict or {}
-            )
-            session.add(rec)
-        
-        if analysis.ime_assessment:
-            rec = AIRecommendation(
-                report_id=report.id,
-                type="ime",
-                ai_output=analysis.ime_assessment.model_dump()
-            )
-            session.add(rec)
-        
-        if analysis.naranjo_assessment:
-            rec = AIRecommendation(
-                report_id=report.id,
-                type="naranjo",
-                ai_output=analysis.naranjo_assessment.model_dump()
-            )
-            session.add(rec)
-        
-        if analysis.expectedness_assessment:
-            rec = AIRecommendation(
-                report_id=report.id,
-                type="expectedness",
-                ai_output=analysis.expectedness_assessment.model_dump()
-            )
-            session.add(rec)
-        
-        completeness = {
-            "missing_mandatory_fields": analysis.missing_mandatory_fields,
-            "warnings": analysis.warnings
-        }
-        rec = AIRecommendation(
-            report_id=report.id,
-            type="completeness",
-            ai_output=completeness
-        )
-        session.add(rec)
-        
-        await session.commit()
-        
-    except Exception as e:
-        print(f"Error analyzing report: {e}")
-        rec = AIRecommendation(
-            report_id=report.id,
-            type="completeness",
-            ai_output={"error": str(e), "missing_mandatory_fields": [], "warnings": []}
-        )
-        session.add(rec)
-        await session.commit()
-    
-    return {"id": report.id, "status": report.status}
-
-
-@router.post("/extract-from-file", response_model=ExtractedCaseData)
-async def extract_from_file(
-    file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user),
-):
-    """Extract data from PDF/DOCX without creating report."""
-    # Определяем тип файла по MIME или расширению имени (Windows может слать application/octet-stream для .docx)
+async def _extract_text_from_upload(file: UploadFile) -> str:
+    """Extract plain text from an uploaded PDF or DOCX file."""
     filename_lower = (file.filename or "").lower()
     _PDF_MIME = "application/pdf"
     _DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -375,88 +121,241 @@ async def extract_from_file(
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only PDF and DOCX files are supported"
+            detail="Only PDF and DOCX files are supported",
         )
 
-    if file.size > 10 * 1024 * 1024:
+    if file.size and file.size > 10 * 1024 * 1024:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File size must be less than 10 MB"
+            detail="File size must be less than 10 MB",
         )
 
     logger.info(
-        "[extract-from-file] filename=%r content_type=%r effective_type=%r size=%s",
+        "[file-extract] filename=%r content_type=%r effective_type=%r size=%s",
         file.filename, file.content_type, effective_type, file.size,
     )
 
-    # Save file temporarily
+    content = await file.read()
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=file.filename) as tmp:
-        content = await file.read()
         tmp.write(content)
         tmp_path = tmp.name
 
-    logger.info("[extract-from-file] saved to tmp=%r (%d bytes)", tmp_path, len(content))
-
     try:
-        # Извлечение текста из файла
-        text = ""
         if effective_type == "pdf":
             from pypdf import PdfReader
             reader = PdfReader(tmp_path)
             pages_text = [page.extract_text() or "" for page in reader.pages]
             text = "\n".join(pages_text)
-            logger.info("[extract-from-file] PDF: %d pages, total chars=%d", len(pages_text), len(text))
-        else:  # effective_type == "docx"
+            logger.info("[file-extract] PDF: %d pages, %d chars", len(pages_text), len(text))
+        else:
             from docx import Document
             doc = Document(tmp_path)
             parts: list[str] = []
-            para_count = 0
             for para in doc.paragraphs:
                 if para.text.strip():
                     parts.append(para.text)
-                    para_count += 1
-            table_count = 0
-            cell_count = 0
             for table in doc.tables:
                 for row in table.rows:
-                    row_cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+                    row_cells = [c.text.strip() for c in row.cells if c.text.strip()]
                     if row_cells:
                         parts.append(" | ".join(row_cells))
-                        cell_count += len(row_cells)
-                table_count += 1
             text = "\n".join(parts)
-            logger.info(
-                "[extract-from-file] DOCX: paragraphs=%d tables=%d cells=%d total_chars=%d",
-                para_count, table_count, cell_count, len(text),
-            )
-
-        logger.info(
-            "[extract-from-file] extracted text preview: %r",
-            text[:600],
-        )
-
-        if not text.strip():
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Не удалось извлечь текст из файла. "
-                       "Убедитесь, что документ содержит текстовые данные (не только изображения).",
-            )
-        
-        # Run case extraction only
-        case_svc = CaseExtractionService(_init_llm())
-        extraction = case_svc.extract(text)
-        
-        return ExtractedCaseData(
-            patient=extraction.patient.model_dump() if extraction.patient else None,
-            reporter=extraction.reporter.model_dump() if extraction.reporter else None,
-            adverse_reaction=extraction.adverse_reaction.model_dump() if extraction.adverse_reaction else None,
-            suspect_drug=extraction.suspect_drug.model_dump() if extraction.suspect_drug else None,
-            concomitant_drugs=[d.model_dump() for d in extraction.concomitant_drugs],
-            case_narrative=extraction.case_narrative,
-            raw_text=text,  # передаём сырой текст фронтенду как fallback
-        )
+            logger.info("[file-extract] DOCX: %d chars", len(text))
     finally:
         os.unlink(tmp_path)
+
+    if not text.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Не удалось извлечь текст из файла. "
+                   "Убедитесь, что документ содержит текстовые данные (не только изображения).",
+        )
+
+    return text
+
+
+async def _run_analysis_bg(
+    report_id: UUID,
+    raw_text: str,
+    case: Optional[CaseExtraction] = None,
+) -> None:
+    """Background task: run analysis pipeline and persist results with own DB session."""
+    async with _async_session() as session:
+        try:
+            orchestrator = _get_orchestrator()
+            if case is not None:
+                analysis = await asyncio.to_thread(orchestrator.analyze_with_case, raw_text, case)
+            else:
+                analysis = await asyncio.to_thread(orchestrator.analyze, raw_text)
+
+            stmt = select(Report).where(Report.id == report_id)
+            report = (await session.execute(stmt)).scalar_one_or_none()
+            if report is None:
+                logger.error("Report %s not found in bg task", report_id)
+                return
+
+            extracted_dict = analysis.case_extraction.model_dump() if analysis.case_extraction else None
+
+            if analysis.case_extraction and analysis.case_extraction.suspect_drug:
+                drug_name = analysis.case_extraction.suspect_drug.name
+                drug = (await session.execute(
+                    select(Drug).where(Drug.name_ru == drug_name)
+                )).scalar_one_or_none()
+                if not drug:
+                    drug = Drug(name_ru=drug_name)
+                    session.add(drug)
+                    await session.flush()
+                report.drug_id = drug.id
+
+            report.extracted_data = extracted_dict
+
+            recs = []
+            if analysis.case_extraction:
+                recs.append(AIRecommendation(report_id=report_id, type="case_extraction",
+                                             ai_output=extracted_dict or {}))
+            if analysis.ime_assessment:
+                recs.append(AIRecommendation(report_id=report_id, type="ime",
+                                             ai_output=analysis.ime_assessment.model_dump()))
+            if analysis.naranjo_assessment:
+                recs.append(AIRecommendation(report_id=report_id, type="naranjo",
+                                             ai_output=analysis.naranjo_assessment.model_dump()))
+            if analysis.expectedness_assessment:
+                recs.append(AIRecommendation(report_id=report_id, type="expectedness",
+                                             ai_output=analysis.expectedness_assessment.model_dump()))
+            recs.append(AIRecommendation(report_id=report_id, type="completeness",
+                                         ai_output={
+                                             "missing_mandatory_fields": analysis.missing_mandatory_fields,
+                                             "warnings": analysis.warnings,
+                                         }))
+            for rec in recs:
+                session.add(rec)
+            await session.commit()
+            logger.info("✅ BG analysis saved for report %s", report_id)
+
+        except Exception as e:
+            logger.error("❌ BG analysis failed for %s: %s", report_id, e, exc_info=True)
+            await session.rollback()
+            session.add(AIRecommendation(
+                report_id=report_id, type="completeness",
+                ai_output={"error": str(e), "missing_mandatory_fields": [], "warnings": []},
+            ))
+            await session.commit()
+
+
+@router.post("", status_code=status.HTTP_202_ACCEPTED)
+async def create_report(
+    request: CreateReportRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Create report from raw text."""
+    user_id = UUID(current_user["user_id"])
+    logger.info("📝 Creating report from text for user %s (%d chars)", user_id, len(request.raw_text))
+    report = Report(reporter_id=user_id, raw_text=request.raw_text, status="submitted")
+    session.add(report)
+    await session.commit()
+    await session.refresh(report)
+    background_tasks.add_task(_run_analysis_bg, report.id, request.raw_text)
+    return {"id": report.id, "status": "pending"}
+
+
+@router.post("/from-file", status_code=status.HTTP_202_ACCEPTED)
+async def create_report_from_file(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Create report from a PDF or DOCX file."""
+    user_id = UUID(current_user["user_id"])
+    logger.info("📎 Creating report from file %r for user %s", file.filename, user_id)
+    text = await _extract_text_from_upload(file)
+    report = Report(reporter_id=user_id, raw_text=text, status="submitted")
+    session.add(report)
+    await session.commit()
+    await session.refresh(report)
+    background_tasks.add_task(_run_analysis_bg, report.id, text)
+    return {"id": report.id, "status": "pending"}
+
+
+@router.post("/from-form", status_code=status.HTTP_202_ACCEPTED)
+async def create_report_from_form(
+    request: CreateReportFromFormRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Create report from structured form. Skips LLM case extraction."""
+    user_id = UUID(current_user["user_id"])
+
+    # Build narrative — used as context for IME/Naranjo/Expectedness LLM calls
+    narrative = (
+        f"Пациент: {request.patient.name or 'Не указан'}, "
+        f"возраст {request.patient.age or 'не указан'}, "
+        f"пол {request.patient.sex or 'не указан'}, "
+        f"вес {request.patient.weight or 'не указан'}. "
+        f"Диагноз: {request.patient.diagnosis or 'не указан'}. "
+        f"Сопутствующие заболевания: {request.patient.comorbidities or 'нет'}.\n"
+        f"Врач: {request.doctor.name or 'Не указан'}, "
+        f"специальность {request.doctor.specialty or 'не указана'}, "
+        f"организация {request.doctor.organization or 'не указана'}.\n"
+        f"Препарат: {request.medication.trade_name or request.medication.inn or 'не указан'} "
+        f"(МНН: {request.medication.inn or 'не указан'}), "
+        f"доза {request.medication.dose or 'не указана'}, "
+        f"путь введения {request.medication.route or 'не указан'}, "
+        f"начало {request.medication.start_date or 'не указано'}, "
+        f"окончание {request.medication.end_date or 'не указано'}, "
+        f"показание: {request.medication.indication or 'не указано'}.\n"
+        f"Нежелательная реакция: {request.adverse_effect.description}. "
+        f"Дата: {request.adverse_effect.date or 'не указана'}. "
+        f"Тяжесть: {request.adverse_effect.severity or 'не указана'}. "
+        f"Серьёзная: {request.adverse_effect.is_serious or 'не указано'}. "
+        f"Исход: {request.adverse_effect.outcome or 'не указан'}.\n"
+        f"Дополнительная информация: {request.additional_info.additional_info or 'нет'}."
+    )
+
+    # Map form fields directly to CaseExtraction — no LLM call needed
+    drug_name = request.medication.trade_name or request.medication.inn
+    case = CaseExtraction(
+        patient=PatientInfo(
+            age=request.patient.age,
+            sex=request.patient.sex,
+            weight=request.patient.weight,
+            diagnosis=request.patient.diagnosis,
+            comorbidities=request.patient.comorbidities,
+        ) if any([request.patient.age, request.patient.sex, request.patient.diagnosis]) else None,
+        reporter=ReporterInfo(
+            type="врач",
+            name=request.doctor.name,
+            organization=request.doctor.organization,
+        ) if any([request.doctor.name, request.doctor.organization]) else None,
+        adverse_reaction=AdverseReactionInfo(
+            description=request.adverse_effect.description,
+            onset_date=request.adverse_effect.date,
+            outcome=request.adverse_effect.outcome,
+            severity=str(request.adverse_effect.severity) if request.adverse_effect.severity else None,
+            is_serious=request.adverse_effect.is_serious,
+        ),
+        suspect_drug=DrugInfo(
+            name=drug_name,
+            dose=request.medication.dose,
+            route=request.medication.route,
+            start_date=request.medication.start_date,
+            end_date=request.medication.end_date,
+            indication=request.medication.indication,
+            is_suspect=True,
+        ) if drug_name else None,
+    )
+
+    report = Report(reporter_id=user_id, raw_text=narrative, status="submitted")
+    session.add(report)
+    await session.commit()
+    await session.refresh(report)
+    logger.info("📋 Report created from form: %s", report.id)
+    background_tasks.add_task(_run_analysis_bg, report.id, narrative, case)
+    return {"id": report.id, "status": "pending"}
 
 
 @router.get("", response_model=ReportListResponse)

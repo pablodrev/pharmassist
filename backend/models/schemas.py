@@ -231,8 +231,7 @@ CASE_EXTRACTION_SCHEMA = """{
   "suspect_drug_end_date": "string | null",
   "suspect_drug_indication": "string | null",
   "suspect_drug_action_taken": "string | null",
-  "concomitant_drugs": [],
-  "case_narrative": "string | null"
+  "concomitant_drugs": []
 }"""
 
 IME_SCHEMA = """{

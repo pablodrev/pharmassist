@@ -7,7 +7,7 @@ import logging
 
 from core.llm_client import LLMClient
 from core.rag_engine import RAGEngine
-from models.schemas import AnalysisReport
+from models.schemas import AnalysisReport, CaseExtraction
 from services.case_extraction import CaseExtractionService
 from services.ime_service import IMEService
 from services.naranjo_service import NaranjoService
@@ -29,6 +29,57 @@ class AnalysisOrchestrator:
         self.naranjo_svc = NaranjoService(llm)
         self.expectedness_svc = ExpectednessService(llm, rag)
         # self.seriousness_svc = SeriousnessService(llm)
+
+    def analyze_with_case(self, case_text: str, case: CaseExtraction) -> AnalysisReport:
+        """Run IME → Naranjo → Expectedness using a pre-built CaseExtraction.
+
+        Use this when the case structure is already known (e.g. submitted via form),
+        so the LLM extraction step is skipped entirely.
+        case_text is still passed to IME/Naranjo/Expectedness as narrative context.
+        """
+        warnings: list[str] = []
+
+        missing = case.missing_mandatory_fields()
+        if missing:
+            warnings.append(f"Недостающие обязательные поля: {', '.join(missing)}")
+
+        logger.info("Step 2 (skipped extraction): IME assessment...")
+        ime = self.ime_svc.assess(case_text)
+
+        naranjo = None
+        if not case.adverse_reaction or not case.suspect_drug:
+            warnings.append(
+                "Оценка причинно-следственной связи (Наранжо) невозможна: "
+                "отсутствуют данные о нежелательной реакции или препарате."
+            )
+        else:
+            logger.info("Step 3 (skipped extraction): Naranjo assessment...")
+            try:
+                naranjo = self.naranjo_svc.assess(case_text)
+                if naranjo.missing_data_for_assessment:
+                    warnings.extend(naranjo.missing_data_for_assessment)
+            except Exception as e:
+                warnings.append(f"Ошибка оценки Наранжо: {e}")
+
+        expectedness = None
+        if case.adverse_reaction and case.adverse_reaction.description:
+            logger.info("Step 4 (skipped extraction): Expectedness assessment...")
+            try:
+                expectedness = self.expectedness_svc.assess(
+                    case_text,
+                    case.adverse_reaction.description,
+                )
+            except Exception as e:
+                warnings.append(f"Ошибка оценки предвиденности: {e}")
+
+        return AnalysisReport(
+            case_extraction=case,
+            ime_assessment=ime,
+            naranjo_assessment=naranjo,
+            expectedness_assessment=expectedness,
+            missing_mandatory_fields=missing,
+            warnings=warnings,
+        )
 
     def analyze(self, case_text: str) -> AnalysisReport:
         warnings: list[str] = []

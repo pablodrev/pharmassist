@@ -43,7 +43,6 @@ class _LLMCaseOutput(BaseModel):
     suspect_drug_indication: Optional[str] = None
     suspect_drug_action_taken: Optional[str] = None
     concomitant_drugs: list[dict] = Field(default_factory=list)
-    case_narrative: Optional[str] = None
 
 
 SYSTEM_PROMPT = """Ты — специалист по фармаконадзору. Твоя задача — извлечь структурированные данные
@@ -129,5 +128,4 @@ class CaseExtractionService:
             adverse_reaction=adverse_reaction,
             suspect_drug=suspect_drug,
             concomitant_drugs=concomitant,
-            case_narrative=raw.case_narrative,
         )
