@@ -1,0 +1,412 @@
+Mild bruising after blood draw
+Transient decrease in platelet count without bleeding
+Minor eosinophilia
+Asymptomatic mild lymphocytosis
+Self-resolving petechiae after tourniquet
+Benign ethnic neutropenia
+Transient mild anemia after menstruation
+Minor post-viral lymphocytopenia
+Isolated mild thrombocytosis without symptoms
+Small ecchymosis from minor trauma
+Benign cold agglutinin disease without hemolysis
+Transient increase in mean corpuscular volume due to alcohol
+Mild asymptomatic basophilia
+Post-exercise mild increase in hematocrit
+Benign monoclonal gammopathy of undetermined significance (MGUS) without progression
+Mild palpitations after caffeine
+Isolated premature atrial contractions (PACs) without symptoms
+Transient tachycardia with fever
+Occasional skipped heartbeat sensation
+Mild bradycardia in athletes
+Benign early repolarization pattern on ECG
+Postural orthostatic tachycardia syndrome (POTS) mild symptoms
+Mild chest discomfort from costochondritis (non-cardiac)
+Transient heartburn mimicking angina
+Asymptomatic sinus arrhythmia
+Exercise-induced mild sinus tachycardia
+Mild peripheral edema without heart failure
+Self-resolving vasovagal response during blood draw
+Isolated first-degree heart block without progression
+Benign heart murmur (flow murmur) in children
+Congenital nevus (small, non-dysplastic)
+Benign familial macrocephaly
+Asymptomatic patent foramen ovale
+Benign congenital hyperbilirubinemia (Gilbert's syndrome)
+Congenital absence of one kidney without dysfunction
+Small asymptomatic accessory spleen
+Benign familial tremor
+Congenital earlobe pit without infection
+Physiologic neonatal jaundice
+Non-progressive congenital scoliosis (mild curve)
+Congenital hypothyroidism with early treatment (mild form)
+Benign congenital neutropenia (mild)
+Umbilical hernia that resolves spontaneously
+Pyloric stenosis in infancy (post-surgical, fully resolved)
+Asymptomatic dextrocardia without other anomalies
+Mild asymptomatic congenital adrenal hyperplasia (non-classical)
+Mild heat intolerance
+Transient mild hyperglycemia after large meal
+Self-resolving hypoglycemia after fasting
+Minor weight gain due to dietary change
+Asymptomatic mild hypertriglyceridemia
+Mild hypothyroidism with normal daily function
+Transient mild hypercortisolism due to stress
+Benign euthyroid sick syndrome
+Mild goiter without compression or hormonal disturbance
+Postpartum transient thyroiditis (mild)
+Mild asymptomatic hyperparathyroidism (non-progressive)
+Self-limiting mild hyponatremia from excessive water intake
+Benign familial hyperlipidemia (mild)
+Transient mild hyperprolactinemia without galactorrhea
+Asymptomatic mild vitamin D deficiency
+Dry eye sensation from screen use
+Mild eye fatigue after reading
+Transient blurred vision with prolonged near work
+Minor conjunctival injection (red eye) without discharge
+Self-resolving subconjunctival hemorrhage (small)
+Eyelid twitching (myokymia)
+Mild photophobia during common cold
+Watery eyes due to wind exposure
+Minor foreign body sensation without corneal abrasion
+Benign eye floaters (few, stable)
+Transient visual snow after standing up
+Mild itching of eyelids without infection
+Self-limiting chalazion (small, non-infected)
+Minor difficulty focusing at night
+Transient diplopia with extreme fatigue
+Mild dry eye from contact lens wear
+Nausea after taking medication on empty stomach
+Mild heartburn after spicy food
+Transient bloating after a heavy meal
+Occasional constipation without complications
+Self-limiting diarrhea (3 loose stools per day, <48 hours)
+Minor abdominal cramping before bowel movement
+Excessive flatulence from dietary change
+Mild indigestion (dyspepsia) after fatty food
+Belching after carbonated drinks
+Transient nausea during pregnancy (first trimester)
+Mild fecal urgency without incontinence
+Self-resolving hemorrhoid flare (small, external)
+Minor anal itching without infection
+Mild gastroesophageal reflux when lying down
+Temporary taste change during illness
+Infrequent loose stools from mild food intolerance
+Mild epigastric discomfort from stress
+Injection site pain (mild)
+Minor bruising around IV site
+Transient fatigue after vaccination
+Self-resolving mild fever (38°C or less) post-immunization
+Mild chills without shivering
+Feeling of warmth at drug administration site
+Minor swelling at subcutaneous injection site
+Temporary dizziness after standing up from lying
+Mild malaise during viral illness
+Non-specific lethargy after travel
+Minor skin irritation from transdermal patch
+Self-limiting headache after lumbar puncture
+Mild discomfort from indwelling catheter (non-infected)
+Transient feeling of coldness after contrast media
+Minor post-operative sore throat (from intubation)
+Seasonal allergic rhinitis (mild sneezing)
+Mild urticaria (localized, <10 lesions)
+Transient contact dermatitis from nickel
+Minor angioedema of lips without respiratory distress
+Self-resolving mild eczema flare (small area)
+Allergic conjunctivitis (mild itching, no vision change)
+Mild drug rash (non-blistering, limited to trunk)
+Transient latex allergy symptoms (local redness)
+Minor pollen-induced asthma (mild, no intervention needed)
+Mild food allergy reaction (oral itching only)
+Self-limiting serum sickness-like reaction (mild arthralgia, no organ involvement)
+Minor dust mite allergy (sneezing, clear rhinorrhea)
+Transient mild eosinophilia due to allergen
+Localized heat rash (miliaria) from sweating
+Mild angioedema of eyelids without airway compromise
+Minor hives from cold exposure
+Common cold (rhinovirus) with mild symptoms
+Mild viral pharyngitis (sore throat, no fever)
+Self-limiting acute otitis media (mild earache, no perforation)
+Minor fungal skin infection (tinea pedis, small area)
+Transient mild conjunctivitis (viral, self-resolving)
+Asymptomatic bacteriuria without infection
+Mild gingivitis without periodontal disease
+Minor cutaneous candidiasis (intertrigo, mild)
+Self-resolving viral gastroenteritis (24 hours, mild)
+Mild bacterial folliculitis (few pustules)
+Transient common wart (single, small)
+Minor herpes simplex labialis (cold sore, no systemic symptoms)
+Mild viral exanthem (non-specific rash, no fever)
+Asymptomatic colonization with yeast (oral thrush mild)
+Minor head lice infestation (few nits, no secondary infection)
+Self-limiting molluscum contagiosum (few lesions)
+Mild athlete's foot (dry scaling only)
+Minor abrasion (superficial, no infection)
+Small first-degree burn (sunburn with redness only)
+Mild contusion from bumping into furniture
+Minor muscle strain from exercise (self-resolving)
+Transient insect bite reaction (local itching, no allergy)
+Mild foreign body in eye (flushed out spontaneously)
+Minor paper cut (superficial, stops bleeding quickly)
+Self-resolving mild sprain (Grade 1 ankle sprain)
+Minor blister from new shoes
+Mild bruise from blood draw
+Transient headache after mild head bump (no LOC)
+Minor sunburn with peeling
+Self-limiting mild frostnip (no tissue damage)
+Minor ingrown toenail (mild discomfort, no infection)
+Mild motion sickness without vomiting
+Transient minor electric shock sensation (static)
+Mild altitude headache (self-resolving upon descent)
+Mildly elevated liver enzymes (transient, <2x ULN)
+Asymptomatic isolated bilirubin elevation (Gilbert's)
+Transient mild increase in creatinine after exercise
+Minor decrease in hemoglobin (post-menstrual, self-resolving)
+Mildly abnormal thyroid function tests (euthyroid sick)
+Transient increase in white blood cell count with infection
+Minor ECG finding: sinus arrhythmia
+Asymptomatic low ferritin without anemia
+Mild elevation of C-reactive protein (10-20 mg/L) post-vaccination
+Transient prolongation of PT/INR due to dietary vitamin K
+Minor decrease in platelet count (100-150 x10^9/L) without bleeding
+Asymptomatic isolated elevated alkaline phosphatase (growth spurt)
+Mild glucosuria without hyperglycemia (renal threshold)
+Transient mild proteinuria after intense exercise
+Self-resolving hematuria after vigorous activity
+Minor increase in body temperature (37.5°C) without cause
+Mild dehydration from insufficient fluid intake
+Self-limiting hypoglycemia (3.0-3.5 mmol/L) after missed meal
+Minor weight loss (1-2 kg) due to dieting
+Transient mild hyperkalemia (5.1-5.5 mEq/L) from hemolyzed sample
+Asymptomatic mild hyponatremia (130-135 mEq/L) from water loading
+Mild hypocalcemia (8.0-8.5 mg/dL) without tetany
+Transient mild hypercalcemia (10.1-10.5 mg/dL) after immobilization
+Minor vitamin B12 deficiency (low normal, no neurological symptoms)
+Self-limiting mild hypomagnesemia due to poor intake
+Mild hyperuricemia without gout symptoms
+Transient mild acidosis after strenuous exercise
+Benign dietary ketosis without symptoms
+Minor micronutrient deficiency (e.g., zinc) without clinical signs
+Mild hyperglycemia (6.1-7.0 mmol/L fasting) in prediabetes
+Transient mild hypertriglyceridemia after fatty meal
+Minor low albumin (3.0-3.5 g/dL) without edema
+Muscle soreness after unaccustomed exercise (delayed onset)
+Mild joint stiffness in morning (lasting <30 minutes)
+Transient low back pain from poor posture
+Minor neck tension from desk work
+Self-resolving mild tendinopathy (e.g., tennis elbow, mild)
+Occasional muscle cramp in calf at night
+Mild costochondritis (chest wall pain, no cardiac cause)
+Benign nocturnal leg cramps
+Minor myalgia associated with viral illness
+Transient jaw fatigue after chewing
+Mild carpal tunnel syndrome symptoms (nighttime tingling, self-resolving)
+Self-limiting rotator cuff tendinitis (mild, no weakness)
+Minor patellofemoral pain syndrome (runner's knee)
+Transient trigger finger (mild, no locking)
+Mild fibromyalgia (widespread pain, no severe impact)
+Minor plantar fasciitis (morning heel pain, resolves with walking)
+Self-resolving benign joint hypermobility (no dislocations)
+Small sebaceous cyst (non-infected, asymptomatic)
+Mild lipoma (soft, movable, non-growing)
+Benign melanocytic nevus (common mole, stable)
+Self-resolving simple renal cyst (small, asymptomatic)
+Minor epidermal inclusion cyst (no inflammation)
+Asymptomatic simple hepatic cyst (incidental)
+Benign ovarian cyst (functional, small, resolves spontaneously)
+Mild breast fibroadenoma (small, stable)
+Small ganglion cyst (wrist, non-painful)
+Benign bone island (enostosis) on X-ray
+Minor thyroid nodule (benign, non-palpable, stable)
+Asymptomatic colonic polyp (hyperplastic, small)
+Benign prostatic hyperplasia (mild, no voiding symptoms)
+Small skin tag (acrochordon)
+Benign hemangioma (superficial, small, stable)
+Mild transient headache (tension-type)
+Self-resolving dizziness after spinning (vertigo lasting seconds)
+Minor paresthesia (pins and needles) in one limb, transient
+Occasional benign fasciculations (eyelid or calf)
+Mild motion sickness (nausea, no vomiting)
+Transient metallic taste in mouth
+Minor hand tremor with anxiety
+Self-limiting sleep myoclonus (hypnic jerk)
+Mild fatigue after poor sleep
+Transient difficulty concentrating (brain fog) during illness
+Minor dysgeusia from medication (e.g., metallic taste)
+Occasional benign positional vertigo (BPPV) without treatment
+Mild restless legs syndrome (intermittent, mild discomfort)
+Self-resolving orthostatic dizziness upon standing
+Minor peripheral neuropathy (mild numbness in toes, non-progressive)
+Transient tinnitus (few seconds) after loud noise
+Mild lightheadedness from hyperventilation
+Morning sickness (nausea without vomiting) in early pregnancy
+Mild breast tenderness during first trimester
+Transient lower abdominal cramping (round ligament pain)
+Minor edema of ankles in late pregnancy
+Self-limiting hemorrhoids due to pregnancy pressure
+Mild fatigue in first trimester
+Occasional backache from pregnancy weight gain
+Transient mood swings during pregnancy
+Minor constipation related to prenatal vitamins
+Self-resolving mild heartburn (GERD) in pregnancy
+Mild vaginal spotting (implantation bleeding)
+Transient increased urinary frequency in pregnancy
+Minor striae gravidarum (stretch marks)
+Self-limiting lactation mastitis (mild, no abscess)
+Mild postpartum blues (not major depression)
+Mild situational anxiety before public speaking
+Transient low mood after stressful event
+Minor insomnia due to caffeine or noise
+Self-resolving irritability with sleep deprivation
+Occasional nightmare without daytime distress
+Mild adjustment disorder (sadness, no impairment)
+Transient decreased libido from fatigue
+Minor obsessive-compulsive tendency (mild checking, no interference)
+Self-limiting mild claustrophobia (avoidance without panic)
+Mild social anxiety (discomfort but functional)
+Occasional nail biting (onychophagia)
+Minor hair pulling (trichotillomania, mild, no bald patches)
+Transient memory lapses (benign forgetfulness)
+Mild panic symptoms (palpitations, no full panic attack)
+Self-resolving mild agoraphobia (avoidance of crowds, manageable)
+Minor decreased attention (daydreaming)
+Mild dysuria (painful urination) without infection
+Transient urinary frequency from drinking large volume
+Minor nocturia (waking once to urinate)
+Self-resolving mild urinary incontinence (stress, small amount)
+Mild urethral irritation from soap
+Occasional post-void dribbling (males)
+Minor polyuria from excessive fluid intake
+Transient proteinuria with fever
+Mild suprapubic discomfort from bladder distension
+Self-limiting asymptomatic renal calculi (small, non-obstructing)
+Minor change in urine color (dark yellow from dehydration)
+Mild urinary urgency without infection
+Occasional hesitancy in older males (mild BPH)
+Transient decreased urine output after diuretics
+Minor bladder spasm (mild, self-resolving)
+Nasal congestion from common cold (mild)
+Mild sore throat from dry air
+Transient cough due to post-nasal drip
+Minor sneezing from dust exposure
+Self-resolving mild hoarseness after shouting
+Mild wheeze with viral infection (no hypoxia)
+Occasional chest tightness from anxiety (non-asthmatic)
+Minor rhinorrhea (runny nose) due to cold temperature
+Transient mild hypoxia (O2 92-94%) at high altitude (self-resolving)
+Mild snoring without apnea
+Self-limiting hiccups (transient, <48 hours)
+Minor epistaxis (small amount, stops quickly)
+Mild dyspnea on exertion (deconditioning)
+Transient globus sensation (lump in throat) from stress
+Minor phlegm production (clear, morning only)
+Self-resolving hyperventilation (anxiety-induced)
+Minor allergic rhinitis (seasonal sneezing, no sinusitis)
+Dry skin from cold weather (xerosis)
+Mild pruritus (itching) without rash
+Transient facial flushing from embarrassment
+Minor acne vulgaris (few comedones, no cysts)
+Self-resolving mild dandruff (pityriasis simplex)
+Mild hyperhidrosis (excessive sweating) under arms
+Occasional urticaria (hives) from heat
+Minor actinic keratosis (rough patch, non-cancerous)
+Transient hair shedding (telogen effluvium) post-stress
+Mild intertrigo (rash in skin folds, mild redness)
+Self-limiting pityriasis rosea (mild, self-resolving)
+Minor nail discoloration (white spots from trauma)
+Mild sunburn (first degree, no blistering)
+Transient cold urticaria (localized reaction to cold)
+Minor seborrheic dermatitis (scaly patches on scalp)
+Self-resolving miliaria (prickly heat rash)
+Mild ear fullness sensation (no infection)
+Transient ear popping during altitude change
+Minor tinnitus (mild, intermittent, non-bothersome)
+Self-limiting mild earache from cerumen impaction
+Occasional itching in ear canal (no infection)
+Mild vertigo lasting seconds after head turn
+Minor external ear redness from cold exposure
+Transient hyperacusis (sensitivity to loud sounds) without pain
+Self-resolving ear discharge (clear, minimal) after swimming
+Mild otalgia referred from dental issue
+Minor sensation of water in ear after shower
+Transient Eustachian tube dysfunction with cold
+Mild balance disturbance (non-vertiginous) from fatigue
+Self-limiting ear pressure from sinus congestion
+Minor external ear eczema (dry, flaky)
+Mildly elevated liver enzymes (ALT/AST <2x ULN) without symptoms
+Transient mild hyperbilirubinemia (jaundice) in newborn
+Minor asymptomatic fatty liver on ultrasound (simple steatosis)
+Self-resolving mild hepatomegaly (palpable, no pain)
+Mild right upper quadrant discomfort after fatty meal (gallbladder not diseased)
+Transient bilirubinuria without liver dysfunction
+Minor asymptomatic gallstone (sludge) on imaging
+Self-limiting mild cholestasis of pregnancy (pruritus, no liver damage)
+Mild gamma-GT elevation from alcohol intake (reversible)
+Transient alkaline phosphatase elevation in children (growth)
+Minor liver tenderness to deep palpation (no hepatomegaly)
+Self-resolving mild hyperbilirubinemia (Gilbert's)
+Mild hepatocyte injury pattern (post-viral, transient)
+Minor asymptomatic hepatic hemangioma (stable, small)
+Transient mild increase in INR without bleeding (dietary)
+Bitter taste from oral medication
+Mild staining of teeth from liquid medication
+Transient difficulty swallowing a large pill (no obstruction)
+Minor tablet adhesion to esophageal wall (heartburn sensation)
+Self-resolving mild skin irritation from topical product
+Mild injection site nodule (non-inflammatory, resolves)
+Transient reduced efficacy of transdermal patch (loose adhesion)
+Minor nasal spray irritation (sneezing, mild burning)
+Self-limiting device-related pressure mark (e.g., CPAP mask)
+Mild itching from surgical adhesive
+Minor unpleasant smell from medication bottle
+Transient altered taste from inhaler use
+Mild coughing from nebulizer mist
+Minor eye drop stinging sensation
+Self-resolving mild headache from intranasal device
+Mild ear drop discomfort (fullness, no pain)
+Mild menstrual cramps (dysmenorrhea, manageable with rest)
+Transient premenstrual breast swelling (mastalgia)
+Minor vaginal itching without infection (non-specific)
+Self-resolving mild dyspareunia (superficial, occasional)
+Mild postcoital spotting (small amount, self-limiting)
+Transient testicular discomfort (dull ache) after prolonged sitting
+Minor penile irritation from soap
+Self-limiting benign prostatic hyperplasia (mild nocturia)
+Mild ejaculation pain (occasional, no infection)
+Transient decreased libido due to stress
+Minor nipple discharge (galactorrhea) from medication
+Self-resolving ovarian cyst pain (mittelschmerz)
+Mild vulvar dryness (non-atrophic)
+Occasional irregular menstrual cycle (variation of 5-7 days)
+Minor pelvic discomfort (non-specific, transient)
+Mild difficulty concentrating at work (temporary)
+Self-limiting social embarrassment after minor accident
+Transient mild anxiety before medical appointment
+Minor inconvenience due to pharmacy wait time
+Occasional work stress affecting sleep (one night)
+Mild financial worry about non-urgent expense
+Self-resolving minor travel fatigue (jet lag)
+Mild public speaking nervousness
+Transient feeling of being overwhelmed (no functional impairment)
+Minor missed appointment due to forgetfulness
+Occasional low motivation for exercise (self-resolving)
+Mild social withdrawal after a stressful week
+Self-limiting minor family conflict (no lasting effect)
+Mild holiday overindulgence (fatigue, bloating)
+Transient difficulty adjusting to daylight saving time
+Minor lack of social support (subjective, no clinical impact)
+Mild facial flushing after alcohol consumption
+Transient orthostatic hypotension (dizziness upon standing) without fainting
+Minor superficial thrombophlebitis (small vein, local tenderness)
+Self-resolving mild telangiectasias (spider veins) on legs
+Mild cold extremities in cold weather (Raynaud's phenomenon mild)
+Occasional vasovagal response (lightheadedness, no syncope)
+Minor varicose veins (small, asymptomatic)
+Transient blood pressure fluctuation (systolic ±10 mmHg) with stress
+Mild dependent edema (ankle swelling) after long flight
+Self-limiting petechiae from tight clothing
+Mild hematoma at venipuncture site (small, resolving)
+Transient livedo reticularis (mottled skin) from cold
+Minor venous prominence during exercise (normal)
+Occasional postprandial hypotension (mild, self-resolving)
+Mild peripheral vasodilation (warmth, redness) from heat
+Self-resolving ecchymosis (bruise) from minor bump
