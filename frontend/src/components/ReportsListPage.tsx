@@ -1,11 +1,9 @@
-import { useState, useMemo } from "react";
-import { Report } from "../types/report";
-import { mockReports } from "../data/mockReports";
+import { useEffect, useMemo, useState } from "react";
+import { apiClient } from "../api/client";
+import type { components } from "../api/schema";
 import { ReportCard } from "./ReportCard";
-import { ReportDetails } from "./ReportDetails";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { Input } from "./ui/input";
-import { Label } from "./ui/label";
 import {
   Select,
   SelectContent,
@@ -14,93 +12,111 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Button } from "./ui/button";
-import { Search, Filter, Plus } from "lucide-react";
+import { Search, Plus } from "lucide-react";
+import { toast } from "sonner";
+
+type ReportShort = components["schemas"]["ReportShortResponse"];
+type ReportStatus = components["schemas"]["ReportStatus"];
+type Severity = components["schemas"]["SeverityLevel"];
+type DateRange = components["schemas"]["DateRangeFilter"];
 
 interface ReportsListPageProps {
-  onNewReport: () => void;
+  onNewReport?: () => void;
+  onOpenReport?: (reportId: string) => void;
+  showNewButton?: boolean;
+  title?: string;
 }
 
-export function ReportsListPage({ onNewReport }: ReportsListPageProps) {
-  const [reports, setReports] = useState<Report[]>(mockReports);
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+const TABS: { value: ReportStatus; label: string }[] = [
+  { value: "submitted", label: "Входящие" },
+  { value: "clarification", label: "На уточнении" },
+  { value: "analysis", label: "На анализе" },
+  { value: "finalized", label: "Финализированы" },
+];
+
+export function ReportsListPage({
+  onNewReport,
+  onOpenReport,
+  showNewButton = true,
+  title = "ФармАссист",
+}: ReportsListPageProps) {
+  const [reports, setReports] = useState<ReportShort[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [medicationFilter, setMedicationFilter] = useState("all");
-  const [severityFilter, setSeverityFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState("all");
-  const [activeTab, setActiveTab] = useState<Report["status"]>("incoming");
+  const [severityFilter, setSeverityFilter] = useState<Severity | "all">("all");
+  const [dateFilter, setDateFilter] = useState<DateRange | "all">("all");
+  const [activeTab, setActiveTab] = useState<ReportStatus>("submitted");
 
-  const handleStatusChange = (reportId: string, newStatus: Report["status"]) => {
-    setReports((prevReports: Report[]) =>
-      prevReports.map((report) =>
-        report.id === reportId ? { ...report, status: newStatus } : report
-      )
-    );
+  useEffect(() => {
+    let cancelled = false;
+    let pollTimer: ReturnType<typeof setTimeout> | null = null;
+    setLoading(true);
 
-    setSelectedReport((prev: Report | null) =>
-      prev && prev.id === reportId ? { ...prev, status: newStatus } : prev
-    );
-  };
+    // NB: backend currently ignores `search` and `severity` (см. reports.py:364).
+    // Шлём всё равно — если поправят, клиентская фильтрация ниже станет no-op.
+    const query: Record<string, unknown> = {
+      status: activeTab,
+      limit: 100,
+    };
+    if (searchQuery.trim()) query.search = searchQuery.trim();
+    if (severityFilter !== "all") query.severity = severityFilter;
+    if (dateFilter !== "all") query.date_range = dateFilter;
 
-  const handleConfirm = (reportId: string) => {
-    setReports((prev) =>
-      prev.map((r) => (r.id === reportId ? { ...r, confirmed: true } : r))
-    );
-  };
+    const fetchOnce = (showSpinner: boolean) => {
+      if (showSpinner) setLoading(true);
+      return apiClient
+        .GET("/api/v1/reports", { params: { query } })
+        .then(({ data, error }) => {
+          if (cancelled) return;
+          if (error || !data) {
+            if (showSpinner) toast.error("Не удалось загрузить список сообщений");
+            setReports([]);
+            return;
+          }
+          setReports(data.items);
+          // Авто-поллинг пока есть pending-карточки (AI ещё анализирует)
+          const hasPending = data.items.some(
+            (r) => r.analysis_status === "pending",
+          );
+          if (hasPending && !cancelled) {
+            pollTimer = setTimeout(() => fetchOnce(false), 5000);
+          }
+        })
+        .finally(() => {
+          if (!cancelled && showSpinner) setLoading(false);
+        });
+    };
 
+    fetchOnce(true);
 
-  // Get unique medications for filter
-  const uniqueMedications = useMemo(() => {
-    const meds = new Set(reports.map((r) => r.medicationName));
-    return Array.from(meds);
-  }, [reports]);
+    return () => {
+      cancelled = true;
+      if (pollTimer) clearTimeout(pollTimer);
+    };
+  }, [activeTab, searchQuery, severityFilter, dateFilter]);
 
-  // Filter reports
-  const filteredReports = useMemo(() => {
-    return reports.filter((report) => {
-      // Tab filter
-      if (report.status !== activeTab) return false;
-
-      // Search filter
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const matchesSearch =
-          report.patientName.toLowerCase().includes(query) ||
-          report.medicationName.toLowerCase().includes(query) ||
-          report.adverseEffect.toLowerCase().includes(query) ||
-          report.id.toLowerCase().includes(query);
-        if (!matchesSearch) return false;
-      }
-
-      // Medication filter
-      if (medicationFilter !== "all" && report.medicationName !== medicationFilter) {
+  // Клиентская фильтрация — компенсирует отсутствие search/severity на бэкенде.
+  const visibleReports = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return reports.filter((r) => {
+      if (severityFilter !== "all" && r.severity !== severityFilter) {
         return false;
       }
-
-      // Severity filter
-      if (severityFilter !== "all" && report.severity !== severityFilter) {
-        return false;
+      if (q) {
+        const haystack = [
+          r.drug_name,
+          r.adverse_reaction,
+          r.reporter_name,
+          r.id,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(q)) return false;
       }
-
-      // Date filter
-      if (dateFilter !== "all") {
-        const today = new Date();
-        const reportDate = report.dateReceived;
-        const daysDiff = Math.floor(
-          (today.getTime() - reportDate.getTime()) / (1000 * 60 * 60 * 24)
-        );
-
-        if (dateFilter === "today" && daysDiff !== 0) return false;
-        if (dateFilter === "week" && daysDiff > 7) return false;
-        if (dateFilter === "month" && daysDiff > 30) return false;
-      }
-
       return true;
     });
-  }, [reports, activeTab, searchQuery, medicationFilter, severityFilter, dateFilter]);
-
-  const getTabCount = (status: Report["status"]) => {
-    return reports.filter((r) => r.status === status).length;
-  };
+  }, [reports, searchQuery, severityFilter]);
 
   return (
     <div className="min-h-screen bg-gray-50 bg-gradient_main">
@@ -109,59 +125,54 @@ export function ReportsListPage({ onNewReport }: ReportsListPageProps) {
           <div className="flex items-center justify-between mb-6">
             <div>
               <div className="flex items-center justify-center">
-                <img src="src\assets\Frame 4.png" alt="logo" className="h-full w-24" />
-                <h1>ФармАссист</h1>
+                <h1>{title}</h1>
               </div>
-              <p className="text-gray-600 mt-1 mx-2">
-                {/* Просмотр и анализ сообщений, обработанных ИИ-ассистентом */}
-              </p>
+              <p className="text-gray-600 mt-1 mx-2"></p>
             </div>
-            <Button onClick={onNewReport} className="bg-blue-600 hover:bg-blue-200">
-              <Plus className="w-4 h-4 mr-2" />
-              Новое сообщение
-            </Button>
+            {showNewButton && onNewReport && (
+              <Button
+                onClick={onNewReport}
+                className="bg-blue-600 hover:bg-blue-200"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Новое сообщение
+              </Button>
+            )}
           </div>
 
-          {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
-                placeholder="Поиск по пациенту, препарату..."
+                placeholder="Поиск по препарату или реакции..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
             </div>
 
-            <Select value={medicationFilter} onValueChange={setMedicationFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Все препараты" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Все препараты</SelectItem>
-                {uniqueMedications.map((med) => (
-                  <SelectItem key={med} value={med}>
-                    {med}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={severityFilter} onValueChange={setSeverityFilter}>
+            <Select
+              value={severityFilter}
+              onValueChange={(v) => setSeverityFilter(v as Severity | "all")}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Все степени тяжести" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Все степени тяжести</SelectItem>
-                <SelectItem value="mild">Легкая</SelectItem>
+                <SelectItem value="mild">Лёгкая</SelectItem>
                 <SelectItem value="moderate">Средняя</SelectItem>
-                <SelectItem value="severe">Тяжелая</SelectItem>
-                <SelectItem value="life-threatening">Жизнеугрожающая</SelectItem>
+                <SelectItem value="severe">Тяжёлая</SelectItem>
+                <SelectItem value="life-threatening">
+                  Жизнеугрожающая
+                </SelectItem>
               </SelectContent>
             </Select>
 
-            <Select value={dateFilter} onValueChange={setDateFilter}>
+            <Select
+              value={dateFilter}
+              onValueChange={(v) => setDateFilter(v as DateRange | "all")}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Все даты" />
               </SelectTrigger>
@@ -174,17 +185,16 @@ export function ReportsListPage({ onNewReport }: ReportsListPageProps) {
             </Select>
           </div>
 
-          <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as Report["status"])}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="incoming">
-                Входящие ({getTabCount("incoming")})
-              </TabsTrigger>
-              <TabsTrigger value="clarification">
-                На уточнении ({getTabCount("clarification")})
-              </TabsTrigger>
-              <TabsTrigger value="analysis">
-                Анализ ({getTabCount("analysis")})
-              </TabsTrigger>
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => setActiveTab(v as ReportStatus)}
+          >
+            <TabsList className="flex w-full">
+              {TABS.map((t) => (
+                <TabsTrigger key={t.value} value={t.value}>
+                  {t.label}
+                </TabsTrigger>
+              ))}
             </TabsList>
           </Tabs>
         </div>
@@ -192,30 +202,31 @@ export function ReportsListPage({ onNewReport }: ReportsListPageProps) {
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="space-y-4">
-          {filteredReports.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-12 text-gray-500">Загрузка...</div>
+          ) : visibleReports.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500">Сообщений не найдено</p>
             </div>
           ) : (
-            filteredReports.map((report) => (
+            visibleReports.map((report) => (
               <ReportCard
                 key={report.id}
                 report={report}
-                onClick={() => setSelectedReport(report)}
+                onClick={() => {
+                  if (onOpenReport) {
+                    onOpenReport(report.id);
+                  } else {
+                    toast.info(
+                      "Просмотр деталей доступен только специалистам (US-07 — позже)",
+                    );
+                  }
+                }}
               />
             ))
           )}
         </div>
       </div>
-
-      {selectedReport && (
-        <ReportDetails
-          report={selectedReport}
-          onClose={() => setSelectedReport(null)}
-          onStatusChange={handleStatusChange}
-          onConfirm={handleConfirm}
-        />
-      )}
     </div>
   );
 }

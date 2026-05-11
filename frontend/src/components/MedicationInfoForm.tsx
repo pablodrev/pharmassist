@@ -65,7 +65,7 @@ export function MedicationInfoForm({ data, onNext, onBack }: MedicationInfoFormP
             <Label htmlFor="tradeName">Торговое название препарата *</Label>
             <Input
               id="tradeName"
-              // {...register("tradeName", { required: "Обязательное поле" })}
+              {...register("tradeName")}
               placeholder="Например: Парацетамол"
             />
             {errors.tradeName && (
@@ -77,7 +77,7 @@ export function MedicationInfoForm({ data, onNext, onBack }: MedicationInfoFormP
             <Label htmlFor="innName">Международное непатентованное название (МНН) *</Label>
             <Input
               id="innName"
-              // {...register("innName", { required: "Обязательное поле" })}
+              {...register("innName")}
               placeholder="Например: Paracetamol"
             />
             {errors.innName && (
@@ -116,7 +116,7 @@ export function MedicationInfoForm({ data, onNext, onBack }: MedicationInfoFormP
                 id="dosage"
                 type="number"
                 step="0.01"
-                // {...register("dosage", { required: "Обязательное поле" })}
+                {...register("dosage")}
                 placeholder="500"
               />
               {errors.dosage && (
@@ -247,7 +247,7 @@ export function MedicationInfoForm({ data, onNext, onBack }: MedicationInfoFormP
             <Label htmlFor="prescriptionReason">Причина назначения препарата *</Label>
             <Textarea
               id="prescriptionReason"
-              // {...register("prescriptionReason", { required: "Обязательное поле" })}
+              {...register("prescriptionReason")}
               placeholder="Краткое описание диагноза или симптома"
               rows={2}
             />

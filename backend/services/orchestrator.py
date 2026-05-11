@@ -4,6 +4,8 @@ Analysis orchestrator: runs all services in sequence and returns AnalysisReport.
 
 from __future__ import annotations
 import logging
+import time
+from contextlib import contextmanager
 
 from core.llm_client import LLMClient
 from core.rag_engine import RAGEngine
@@ -15,6 +17,22 @@ from services.expectedness_service import ExpectednessService
 #from services.seriousness_service import SeriousnessService
 
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def _timed(label: str):
+    """Log start/end of a pipeline step with elapsed time."""
+    logger.info("➡️  %s — start", label)
+    t0 = time.perf_counter()
+    try:
+        yield
+    except Exception:
+        elapsed = time.perf_counter() - t0
+        logger.exception("❌ %s — failed after %.2fs", label, elapsed)
+        raise
+    else:
+        elapsed = time.perf_counter() - t0
+        logger.info("✅ %s — done in %.2fs", label, elapsed)
 
 
 class AnalysisOrchestrator:
@@ -37,14 +55,16 @@ class AnalysisOrchestrator:
         so the LLM extraction step is skipped entirely.
         case_text is still passed to IME/Naranjo/Expectedness as narrative context.
         """
+        logger.info("🚀 Pipeline start (form, %d chars) — extraction skipped", len(case_text))
+        pipeline_t0 = time.perf_counter()
         warnings: list[str] = []
 
         missing = case.missing_mandatory_fields()
         if missing:
             warnings.append(f"Недостающие обязательные поля: {', '.join(missing)}")
 
-        logger.info("Step 2 (skipped extraction): IME assessment...")
-        ime = self.ime_svc.assess(case_text)
+        with _timed("Step 2/4 — IME assessment"):
+            ime = self.ime_svc.assess(case_text)
 
         naranjo = None
         if not case.adverse_reaction or not case.suspect_drug:
@@ -52,26 +72,33 @@ class AnalysisOrchestrator:
                 "Оценка причинно-следственной связи (Наранжо) невозможна: "
                 "отсутствуют данные о нежелательной реакции или препарате."
             )
+            logger.info("⏭️  Step 3/4 — Naranjo skipped (missing reaction or drug)")
         else:
-            logger.info("Step 3 (skipped extraction): Naranjo assessment...")
-            try:
-                naranjo = self.naranjo_svc.assess(case_text)
-                if naranjo.missing_data_for_assessment:
-                    warnings.extend(naranjo.missing_data_for_assessment)
-            except Exception as e:
-                warnings.append(f"Ошибка оценки Наранжо: {e}")
+            with _timed("Step 3/4 — Naranjo assessment"):
+                try:
+                    naranjo = self.naranjo_svc.assess(case_text)
+                    if naranjo.missing_data_for_assessment:
+                        warnings.extend(naranjo.missing_data_for_assessment)
+                except Exception as e:
+                    warnings.append(f"Ошибка оценки Наранжо: {e}")
 
         expectedness = None
         if case.adverse_reaction and case.adverse_reaction.description:
-            logger.info("Step 4 (skipped extraction): Expectedness assessment...")
-            try:
-                expectedness = self.expectedness_svc.assess(
-                    case_text,
-                    case.adverse_reaction.description,
-                )
-            except Exception as e:
-                warnings.append(f"Ошибка оценки предвиденности: {e}")
+            with _timed("Step 4/4 — Expectedness assessment"):
+                try:
+                    expectedness = self.expectedness_svc.assess(
+                        case_text,
+                        case.adverse_reaction.description,
+                    )
+                except Exception as e:
+                    warnings.append(f"Ошибка оценки предвиденности: {e}")
+        else:
+            logger.info("⏭️  Step 4/4 — Expectedness skipped (no reaction description)")
 
+        logger.info(
+            "🏁 Pipeline finished in %.2fs (form path)",
+            time.perf_counter() - pipeline_t0,
+        )
         return AnalysisReport(
             case_extraction=case,
             ime_assessment=ime,
@@ -82,58 +109,53 @@ class AnalysisOrchestrator:
         )
 
     def analyze(self, case_text: str) -> AnalysisReport:
+        logger.info("🚀 Pipeline start (raw text, %d chars)", len(case_text))
+        pipeline_t0 = time.perf_counter()
         warnings: list[str] = []
 
-        # Step 1: Extract case structure
-        logger.info("Step 1: Extracting case structure...")
-        case = self.case_svc.extract(case_text)
+        with _timed("Step 1/4 — Case extraction (LLM)"):
+            case = self.case_svc.extract(case_text)
 
-        # Check mandatory fields
         missing = case.missing_mandatory_fields()
         if missing:
             warnings.append(f"Недостающие обязательные поля: {', '.join(missing)}")
-        
-        print("Case", case)
 
-        
-        # Step 2: IME clinical significance
-        logger.info("Step 2: IME assessment...")
-        ime = self.ime_svc.assess(case_text)
+        with _timed("Step 2/4 — IME assessment"):
+            ime = self.ime_svc.assess(case_text)
 
-        print("IME: ", ime)
-        # Step 3: Naranjo causality (only if we have enough data)
         naranjo = None
         if not case.adverse_reaction or not case.suspect_drug:
             warnings.append(
                 "Оценка причинно-следственной связи (Наранжо) невозможна: "
                 "отсутствуют данные о нежелательной реакции или препарате."
             )
+            logger.info("⏭️  Step 3/4 — Naranjo skipped (missing reaction or drug)")
         else:
-            logger.info("Step 3: Naranjo assessment...")
-            try:
-                naranjo = self.naranjo_svc.assess(case_text)
-                if naranjo.missing_data_for_assessment:
-                    warnings.extend(naranjo.missing_data_for_assessment)
-            except Exception as e:
-                warnings.append(f"Ошибка оценки Наранжо: {e}")
-        
-        print("Naranjo: ", naranjo)
-        # Step 4: Expectedness
-        seriousness = None
+            with _timed("Step 3/4 — Naranjo assessment"):
+                try:
+                    naranjo = self.naranjo_svc.assess(case_text)
+                    if naranjo.missing_data_for_assessment:
+                        warnings.extend(naranjo.missing_data_for_assessment)
+                except Exception as e:
+                    warnings.append(f"Ошибка оценки Наранжо: {e}")
+
         expectedness = None
-        print("CASE ADVERSE REACTION: ", case.adverse_reaction)
-        print("CASE ADVERSE REACTION DESCRIPTION: ", case.adverse_reaction.description)
         if case.adverse_reaction and case.adverse_reaction.description:
-            logger.info("Step 4: Expectedness assessment...")
-            try:
-                expectedness = self.expectedness_svc.assess(
-                    case_text,
-                    case.adverse_reaction.description,
-                )
-                print("EXPECTEDNESS: ", expectedness)
-            except Exception as e:
-                warnings.append(f"Ошибка оценки предвиденности: {e}")
-        # print("EXPECTEDNESS: ", expectedness)
+            with _timed("Step 4/4 — Expectedness assessment"):
+                try:
+                    expectedness = self.expectedness_svc.assess(
+                        case_text,
+                        case.adverse_reaction.description,
+                    )
+                except Exception as e:
+                    warnings.append(f"Ошибка оценки предвиденности: {e}")
+        else:
+            logger.info("⏭️  Step 4/4 — Expectedness skipped (no reaction description)")
+
+        logger.info(
+            "🏁 Pipeline finished in %.2fs (raw text path)",
+            time.perf_counter() - pipeline_t0,
+        )
         return AnalysisReport(
             case_extraction=case,
             ime_assessment=ime,

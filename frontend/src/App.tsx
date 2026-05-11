@@ -6,10 +6,17 @@ import { AdverseEffectInfoForm } from "./components/AdverseEffectInfoForm";
 import { FilesAndAdditionalInfoForm } from "./components/FilesAndAdditionalInfoForm";
 import { FormProgress } from "./components/FormProgress";
 import { ReportsListPage } from "./components/ReportsListPage";
+import { LoginPage } from "./components/LoginPage";
+import { RegisterPage } from "./components/RegisterPage";
+import { NewReportChoice } from "./components/NewReportChoice";
+import { FreeTextReportForm } from "./components/FreeTextReportForm";
+import { SpecialistReviewPage } from "./components/SpecialistReviewPage";
 import { Button } from "./components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
-import { set } from "react-hook-form";
+import { ArrowLeft, LogOut } from "lucide-react";
+import { useAuth } from "./auth/AuthContext";
+import { apiClient } from "./api/client";
+import { mapFormDataToCreateReport } from "./api/reportMapper";
 
 export interface FormData {
   // Patient Information
@@ -73,8 +80,60 @@ const steps = [
   { id: 5, title: "Файлы" },
 ];
 
+const EMPTY_FORM: FormData = {
+  patientName: "",
+  patientGender: "",
+  patientAge: "",
+  patientBirthDate: undefined,
+  patientWeight: "",
+  primaryDiagnosis: "",
+  comorbidities: "",
+  doctorName: "",
+  doctorPosition: "",
+  doctorSpecialty: "",
+  medicalInstitution: "",
+  doctorPhone: "",
+  doctorEmail: "",
+  tradeName: "",
+  innName: "",
+  dosageForm: "",
+  dosage: "",
+  dosageUnit: "мг",
+  frequency: "",
+  administrationRoute: "",
+  startDate: undefined,
+  endDate: undefined,
+  prescriptionReason: "",
+  batchNumber: "",
+  manufacturer: "",
+  effectDate: undefined,
+  effectTime: "",
+  effectDescription: "",
+  effectLocalization: "",
+  severity: "",
+  severityCriteria: "",
+  actionsTaken: [],
+  treatmentDescription: "",
+  outcome: "",
+  outcomeDate: undefined,
+  previousReactions: "",
+  previousReactionsDescription: "",
+  causalityAssessment: "",
+  causalityFactors: "",
+  files: [],
+  fileDescriptions: {},
+  additionalInfo: "",
+};
+
 export default function App() {
-  const [view, setView] = useState<"list" | "form">("list");
+  const { user, loading, logout } = useAuth();
+  const [authView, setAuthView] = useState<"login" | "register">("login");
+  const [view, setView] = useState<
+    "list" | "choice" | "form" | "freetext" | "specialist-review"
+  >("list");
+  const [openReportId, setOpenReportId] = useState<string | null>(null);
+  const [listRefreshKey, setListRefreshKey] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [ skippedSteps, setSkippedSteps ] = useState<Set<number>>(new Set());
   const [formData, setFormData] = useState<FormData>({
@@ -140,74 +199,152 @@ export default function App() {
   setCurrentStep(5);
 };
 
-  const handleSubmit = (data: Partial<FormData>) => {
+  const resetForm = () => {
+    setCurrentStep(1);
+    setSkippedSteps(new Set());
+    setFormData(EMPTY_FORM);
+  };
+
+  const handleSubmit = async (data: Partial<FormData>) => {
     const finalData = { ...formData, ...data };
     setFormData(finalData);
-    
-    console.log("Отправка данных о побочном эффекте:", finalData);
-    
-    toast.success("Отчет успешно отправлен!", {
-      description: "Спасибо за вашу информацию. Ваш отчет будет рассмотрен специалистами по фармаконадзору.",
-    });
 
-    // Reset form and return to list
-    setTimeout(() => {
-      setCurrentStep(1);
-      setFormData({
-        patientName: "",
-        patientGender: "",
-        patientAge: "",
-        patientBirthDate: undefined,
-        patientWeight: "",
-        primaryDiagnosis: "",
-        comorbidities: "",
-        doctorName: "",
-        doctorPosition: "",
-        doctorSpecialty: "",
-        medicalInstitution: "",
-        doctorPhone: "",
-        doctorEmail: "",
-        tradeName: "",
-        innName: "",
-        dosageForm: "",
-        dosage: "",
-        dosageUnit: "мг",
-        frequency: "",
-        administrationRoute: "",
-        startDate: undefined,
-        endDate: undefined,
-        prescriptionReason: "",
-        batchNumber: "",
-        manufacturer: "",
-        effectDate: undefined,
-        effectTime: "",
-        effectDescription: "",
-        effectLocalization: "",
-        severity: "",
-        severityCriteria: "",
-        actionsTaken: [],
-        treatmentDescription: "",
-        outcome: "",
-        outcomeDate: undefined,
-        previousReactions: "",
-        previousReactionsDescription: "",
-        causalityAssessment: "",
-        causalityFactors: "",
-        files: [],
-        fileDescriptions: {},
-        additionalInfo: "",
+    if (!finalData.effectDescription || finalData.effectDescription.trim().length === 0) {
+      toast.error("Заполните описание побочного эффекта");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const body = mapFormDataToCreateReport(finalData);
+      const { error } = await apiClient.POST("/api/v1/reports/from-form", {
+        body,
       });
+      if (error) {
+        const msg =
+          (error as { detail?: unknown }).detail &&
+          typeof (error as { detail?: unknown }).detail === "string"
+            ? ((error as { detail: string }).detail)
+            : "Не удалось отправить сообщение";
+        throw new Error(msg);
+      }
+      toast.success("Сообщение принято", {
+        description:
+          "AI начал анализ — результат появится в списке через ~15 секунд.",
+      });
+      resetForm();
+      setListRefreshKey((k) => k + 1);
       setView("list");
-    }, 2000);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Ошибка отправки");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleNewReport = () => {
-    setView("form");
-    setCurrentStep(1);
+    resetForm();
+    setView("choice");
   };
 
+  const handleFreeTextSubmitted = () => {
+    setListRefreshKey((k) => k + 1);
+    setView("list");
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Загрузка...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return authView === "login" ? (
+      <LoginPage onSwitchToRegister={() => setAuthView("register")} />
+    ) : (
+      <RegisterPage onSwitchToLogin={() => setAuthView("login")} />
+    );
+  }
+
+  if (user.role === "specialist") {
+    if (view === "specialist-review" && openReportId) {
+      return (
+        <SpecialistReviewPage
+          reportId={openReportId}
+          onBack={() => {
+            setOpenReportId(null);
+            setView("list");
+            setListRefreshKey((k) => k + 1);
+          }}
+          onFinalized={() => {
+            setOpenReportId(null);
+            setView("list");
+            setListRefreshKey((k) => k + 1);
+          }}
+        />
+      );
+    }
+    return (
+      <div>
+        <div className="bg-white border-b px-4 py-2 flex justify-between items-center">
+          <span className="text-sm text-gray-600">
+            {user.full_name} ({user.email}) — специалист
+          </span>
+          <Button variant="ghost" size="sm" onClick={logout}>
+            <LogOut className="w-4 h-4 mr-2" /> Выйти
+          </Button>
+        </div>
+        <ReportsListPage
+          key={listRefreshKey}
+          showNewButton={false}
+          title="Очередь специалиста"
+          onOpenReport={(id) => {
+            setOpenReportId(id);
+            setView("specialist-review");
+          }}
+        />
+      </div>
+    );
+  }
+
   if (view === "list") {
-    return <ReportsListPage onNewReport={handleNewReport} />;
+    return (
+      <div>
+        <div className="bg-white border-b px-4 py-2 flex justify-between items-center">
+          <span className="text-sm text-gray-600">
+            {user.full_name} ({user.email})
+          </span>
+          <Button variant="ghost" size="sm" onClick={logout}>
+            <LogOut className="w-4 h-4 mr-2" /> Выйти
+          </Button>
+        </div>
+        <ReportsListPage
+          key={listRefreshKey}
+          onNewReport={handleNewReport}
+        />
+      </div>
+    );
+  }
+
+  if (view === "choice") {
+    return (
+      <NewReportChoice
+        onChooseForm={() => setView("form")}
+        onChooseFreeText={() => setView("freetext")}
+        onBack={() => setView("list")}
+      />
+    );
+  }
+
+  if (view === "freetext") {
+    return (
+      <FreeTextReportForm
+        onSubmitted={handleFreeTextSubmitted}
+        onBack={() => setView("choice")}
+      />
+    );
   }
 
   const skipToLast = () => {
@@ -230,11 +367,12 @@ export default function App() {
         <div className="mb-6">
           <Button
             variant="ghost"
-            onClick={() => setView("list")}
+            onClick={() => setView("choice")}
             className="mb-4"
+            disabled={submitting}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Вернуться к списку
+            Назад
           </Button>
         </div>
         <div className="mb-6 text-center">

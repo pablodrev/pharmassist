@@ -30,6 +30,11 @@ services:
       SECRET_KEY: your-secret-key-here-change-in-production
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
       PYTHONUNBUFFERED: 1
+      # HuggingFace: read token from .env if set; HF_HOME pins the cache to the
+      # mounted volume so model weights survive container restarts.
+      HF_TOKEN: ${HF_TOKEN:-}
+      HUGGING_FACE_HUB_TOKEN: ${HF_TOKEN:-}
+      HF_HOME: /root/.cache/huggingface
     env_file:
       - .env
     ports:

@@ -181,9 +181,15 @@ async def _run_analysis_bg(
     case: Optional[CaseExtraction] = None,
 ) -> None:
     """Background task: run analysis pipeline and persist results with own DB session."""
+    import time as _time
+    bg_t0 = _time.perf_counter()
+    mode = "form (case provided)" if case is not None else "raw text"
+    logger.info("🔬 BG analysis START — report=%s, mode=%s, text_len=%d",
+                report_id, mode, len(raw_text))
     async with _async_session() as session:
         try:
             orchestrator = _get_orchestrator()
+            logger.info("🔬 Orchestrator ready for report=%s, dispatching pipeline...", report_id)
             if case is not None:
                 analysis = await asyncio.to_thread(orchestrator.analyze_with_case, raw_text, case)
             else:
@@ -231,10 +237,16 @@ async def _run_analysis_bg(
             for rec in recs:
                 session.add(rec)
             await session.commit()
-            logger.info("✅ BG analysis saved for report %s", report_id)
+            logger.info(
+                "✅ BG analysis saved for report=%s (total=%.2fs, recommendations=%d)",
+                report_id, _time.perf_counter() - bg_t0, len(recs),
+            )
 
         except Exception as e:
-            logger.error("❌ BG analysis failed for %s: %s", report_id, e, exc_info=True)
+            logger.error(
+                "❌ BG analysis failed for report=%s after %.2fs: %s",
+                report_id, _time.perf_counter() - bg_t0, e, exc_info=True,
+            )
             await session.rollback()
             session.add(AIRecommendation(
                 report_id=report_id, type="completeness",
@@ -290,11 +302,56 @@ async def create_report_from_form(
     """Create report from structured form. Skips LLM case extraction."""
     user_id = UUID(current_user["user_id"])
 
+    # Russian labels for enum values used in the narrative.
+    # Keeps raw_text human-readable for the specialist UI without frontend hacks.
+    SEX_RU = {"male": "мужской", "female": "женский"}
+    ROUTE_RU = {
+        "oral": "внутрь",
+        "iv": "внутривенно",
+        "im": "внутримышечно",
+        "sc": "подкожно",
+        "topical": "местно",
+        "rectal": "ректально",
+        "vaginal": "вагинально",
+        "inhalation": "ингаляционно",
+    }
+    SEVERITY_RU = {
+        "mild": "лёгкая",
+        "moderate": "средняя",
+        "severe": "тяжёлая",
+        "life-threatening": "жизнеугрожающая",
+    }
+    OUTCOME_RU = {
+        "recovered": "выздоровление",
+        "improving": "улучшение",
+        "unchanged": "без изменений",
+        "worsening": "ухудшение",
+        "death": "смерть",
+        "unknown": "неизвестно",
+    }
+
+    def _ru(value, mapping: dict[str, str], default: str) -> str:
+        if value is None:
+            return default
+        # SeverityLevel(str, Enum) → берём .value, иначе обычная строка
+        key = getattr(value, "value", value)
+        return mapping.get(str(key), default)
+
+    def _bool_ru(value, default: str) -> str:
+        if value is None:
+            return default
+        return "да" if value else "нет"
+
+    severity_str = _ru(request.adverse_effect.severity, SEVERITY_RU, "не указана")
+    outcome_str = _ru(request.adverse_effect.outcome, OUTCOME_RU, "не указан")
+    sex_str = _ru(request.patient.sex, SEX_RU, "не указан")
+    route_str = _ru(request.medication.route, ROUTE_RU, "не указан")
+
     # Build narrative — used as context for IME/Naranjo/Expectedness LLM calls
     narrative = (
         f"Пациент: {request.patient.name or 'Не указан'}, "
         f"возраст {request.patient.age or 'не указан'}, "
-        f"пол {request.patient.sex or 'не указан'}, "
+        f"пол {sex_str}, "
         f"вес {request.patient.weight or 'не указан'}. "
         f"Диагноз: {request.patient.diagnosis or 'не указан'}. "
         f"Сопутствующие заболевания: {request.patient.comorbidities or 'нет'}.\n"
@@ -304,15 +361,15 @@ async def create_report_from_form(
         f"Препарат: {request.medication.trade_name or request.medication.inn or 'не указан'} "
         f"(МНН: {request.medication.inn or 'не указан'}), "
         f"доза {request.medication.dose or 'не указана'}, "
-        f"путь введения {request.medication.route or 'не указан'}, "
+        f"путь введения {route_str}, "
         f"начало {request.medication.start_date or 'не указано'}, "
         f"окончание {request.medication.end_date or 'не указано'}, "
         f"показание: {request.medication.indication or 'не указано'}.\n"
         f"Нежелательная реакция: {request.adverse_effect.description}. "
         f"Дата: {request.adverse_effect.date or 'не указана'}. "
-        f"Тяжесть: {request.adverse_effect.severity or 'не указана'}. "
-        f"Серьёзная: {request.adverse_effect.is_serious or 'не указано'}. "
-        f"Исход: {request.adverse_effect.outcome or 'не указан'}.\n"
+        f"Тяжесть: {severity_str}. "
+        f"Серьёзная: {_bool_ru(request.adverse_effect.is_serious, 'не указано')}. "
+        f"Исход: {outcome_str}.\n"
         f"Дополнительная информация: {request.additional_info.additional_info or 'нет'}."
     )
 
@@ -335,7 +392,7 @@ async def create_report_from_form(
             description=request.adverse_effect.description,
             onset_date=request.adverse_effect.date,
             outcome=request.adverse_effect.outcome,
-            severity=str(request.adverse_effect.severity) if request.adverse_effect.severity else None,
+            severity=getattr(request.adverse_effect.severity, "value", request.adverse_effect.severity) if request.adverse_effect.severity else None,
             is_serious=request.adverse_effect.is_serious,
         ),
         suspect_drug=DrugInfo(
