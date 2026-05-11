@@ -48,7 +48,7 @@ class ExpectednessService:
 
     def assess(self, case_text: str, adverse_reaction: str) -> ExpectednessAssessment:
         if not self.rag.is_loaded:
-            result: _ExpectednessLLMOutput = self.llm.complete_structured(
+            raw = self.llm.complete_structured(
                 system_prompt=SYSTEM_NO_RAG,
                 user_prompt=(
                     f"Нежелательная реакция: {adverse_reaction}\n"
@@ -57,6 +57,7 @@ class ExpectednessService:
                 schema=_ExpectednessLLMOutput,
                 schema_hint_explicit=EXPECTEDNESS_SCHEMA
             )
+            result = _ExpectednessLLMOutput.model_validate(raw)
             return ExpectednessAssessment(
                 verdict=result.verdict,
                 rationale=result.rationale,

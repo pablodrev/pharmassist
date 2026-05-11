@@ -297,7 +297,7 @@ export default function App() {
           </Button>
         </div>
         <ReportsListPage
-          key={listRefreshKey}
+          refreshKey={listRefreshKey}
           showNewButton={false}
           title="Очередь специалиста"
           onOpenReport={(id) => {
@@ -321,7 +321,7 @@ export default function App() {
           </Button>
         </div>
         <ReportsListPage
-          key={listRefreshKey}
+          refreshKey={listRefreshKey}
           onNewReport={handleNewReport}
         />
       </div>

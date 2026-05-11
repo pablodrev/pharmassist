@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiClient } from "../api/client";
 import type { components } from "../api/schema";
 import { ReportCard } from "./ReportCard";
@@ -25,6 +25,7 @@ interface ReportsListPageProps {
   onOpenReport?: (reportId: string) => void;
   showNewButton?: boolean;
   title?: string;
+  refreshKey?: number;
 }
 
 const TABS: { value: ReportStatus; label: string }[] = [
@@ -39,6 +40,7 @@ export function ReportsListPage({
   onOpenReport,
   showNewButton = true,
   title = "ФармАссист",
+  refreshKey,
 }: ReportsListPageProps) {
   const [reports, setReports] = useState<ReportShort[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,53 +49,60 @@ export function ReportsListPage({
   const [dateFilter, setDateFilter] = useState<DateRange | "all">("all");
   const [activeTab, setActiveTab] = useState<ReportStatus>("submitted");
 
+  // Строка фильтров — меняется только при смене таба/поиска/фильтров (не при refreshKey).
+  // Используется для того, чтобы отличать «обновление после отправки» от «смены фильтра».
+  const filterKey = `${activeTab}|${searchQuery}|${severityFilter}|${dateFilter}`;
+  const prevFilterKey = useRef(filterKey);
+
   useEffect(() => {
     let cancelled = false;
     let pollTimer: ReturnType<typeof setTimeout> | null = null;
-    setLoading(true);
+
+    const filterChanged = filterKey !== prevFilterKey.current;
+    prevFilterKey.current = filterKey;
+
+    // При смене фильтра — чистим список и показываем спиннер.
+    // При обновлении после отправки (refreshKey) — оставляем старые данные видимыми.
+    if (filterChanged) {
+      setReports([]);
+      setLoading(true);
+    }
 
     // NB: backend currently ignores `search` and `severity` (см. reports.py:364).
-    // Шлём всё равно — если поправят, клиентская фильтрация ниже станет no-op.
-    const query: Record<string, unknown> = {
-      status: activeTab,
-      limit: 100,
-    };
+    const query: Record<string, unknown> = { status: activeTab, limit: 100 };
     if (searchQuery.trim()) query.search = searchQuery.trim();
     if (severityFilter !== "all") query.severity = severityFilter;
     if (dateFilter !== "all") query.date_range = dateFilter;
 
-    const fetchOnce = (showSpinner: boolean) => {
-      if (showSpinner) setLoading(true);
-      return apiClient
+    const fetchOnce = () =>
+      apiClient
         .GET("/api/v1/reports", { params: { query } })
         .then(({ data, error }) => {
           if (cancelled) return;
           if (error || !data) {
-            if (showSpinner) toast.error("Не удалось загрузить список сообщений");
-            setReports([]);
+            toast.error("Не удалось загрузить список сообщений");
             return;
           }
           setReports(data.items);
+          setLoading(false);
           // Авто-поллинг пока есть pending-карточки (AI ещё анализирует)
-          const hasPending = data.items.some(
-            (r) => r.analysis_status === "pending",
-          );
+          const hasPending = data.items.some((r) => r.analysis_status === "pending");
           if (hasPending && !cancelled) {
-            pollTimer = setTimeout(() => fetchOnce(false), 5000);
+            pollTimer = setTimeout(fetchOnce, 5000);
           }
         })
-        .finally(() => {
-          if (!cancelled && showSpinner) setLoading(false);
+        .catch(() => {
+          if (!cancelled) setLoading(false);
         });
-    };
 
-    fetchOnce(true);
+    fetchOnce();
 
     return () => {
       cancelled = true;
       if (pollTimer) clearTimeout(pollTimer);
     };
-  }, [activeTab, searchQuery, severityFilter, dateFilter]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterKey, refreshKey]);
 
   // Клиентская фильтрация — компенсирует отсутствие search/severity на бэкенде.
   const visibleReports = useMemo(() => {

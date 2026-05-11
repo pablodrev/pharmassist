@@ -71,9 +71,17 @@ export function FreeTextReportForm({ onSubmitted, onBack }: Props) {
               id="raw-text"
               value={text}
               onChange={(e) => setText(e.target.value)}
+              onPaste={(e) => {
+                e.preventDefault();
+                const paste = e.clipboardData.getData("text/plain");
+                const el = e.currentTarget;
+                const start = el.selectionStart ?? el.value.length;
+                const end = el.selectionEnd ?? el.value.length;
+                const next = el.value.slice(0, start) + paste + el.value.slice(end);
+                setText(next);
+              }}
               rows={14}
               placeholder="Например: Пациент 54 лет начал приём Амоксициллина 500 мг 3 раза в день 10.05. На третий день появилась крапивница на руках и ногах, зуд. Препарат отменён 13.05, симптомы прошли через 2 дня."
-              required
             />
             <p className="text-xs text-gray-500 mt-1">
               Минимум {MIN_LENGTH} символов. Сейчас: {text.trim().length}.
